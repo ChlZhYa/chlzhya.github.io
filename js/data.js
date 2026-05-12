@@ -21,7 +21,6 @@ const NAV_LINKS = [
   { label: '首页', href: 'index.html', icon: 'home' },
   { label: '学习路径', href: 'learning.html', icon: 'menu_book' },
   { label: '旅行时间表', href: 'travel.html', icon: 'explore' },
-  { label: '管理', href: 'admin.html', icon: 'settings' },
 ];
 
 // ============================================================
