@@ -74,13 +74,13 @@
             <p class="text-on-surface-variant mt-1">${day.date}</p>
           </div>
         </div>
-        <div class="relative before:absolute before:inset-0 before:ml-[1.1875rem] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-outline-variant before:to-transparent space-y-8">
-          ${day.events.map(ev => `
-            <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
-              <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background ${colorMap[ev.color] || colorMap.primary} shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
-                <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1;">${ev.icon}</span>
+        <div class="relative pl-10 md:pl-14 before:absolute before:left-[1.125rem] md:before:left-[1.375rem] before:top-0 before:bottom-0 before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-outline-variant before:to-transparent space-y-6">
+          ${day.events.map((ev, i) => `
+            <div class="relative group">
+              <div class="absolute left-[-1.625rem] md:left-[-2rem] top-1 flex items-center justify-center w-8 h-8 rounded-full border-4 border-background ${colorMap[ev.color] || colorMap.primary} shadow z-10">
+                <span class="material-symbols-outlined text-xs" style="font-variation-settings:'FILL' 1;">${ev.icon}</span>
               </div>
-              <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-6 rounded-xl bg-surface-container-low border border-outline-variant shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300">
+              <div class="p-5 rounded-xl bg-surface-container-low border border-outline-variant shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300">
                 <div class="flex items-center justify-between mb-2">
                   <time class="font-mono text-sm font-semibold text-${ev.color}">${ev.time}</time>
                   <span class="px-2 py-0.5 text-xs font-medium bg-tertiary-container text-on-tertiary-container rounded-sm">${ev.type}</span>
@@ -89,7 +89,7 @@
                 <p class="text-on-surface-variant text-sm mb-3">${ev.description}</p>
                 <details class="group/details">
                   <summary class="text-sm font-medium text-primary hover:text-primary-container flex items-center gap-1 transition-colors cursor-pointer list-none">查看详情 <span class="material-symbols-outlined text-sm group-open/details:rotate-180 transition-transform">expand_more</span></summary>
-                  <p class="text-on-surface-variant text-sm mt-3 pt-3 border-t border-outline-variant/30">${ev.detail || '暂无更多详情。'}</p>
+                  <p class="text-on-surface-variant text-sm mt-3 pt-3 border-t border-outline-variant/30 whitespace-pre-line">${ev.detail || '暂无更多详情。'}</p>
                 </details>
               </div>
             </div>
