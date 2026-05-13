@@ -29,23 +29,18 @@
   h1, h2, h3, .font-display, .font-headline { font-family: 'Hanken Grotesk', sans-serif; }
   .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
 
-  /* ── Snap-scroll day switching ── */
-  html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
-  .snap-day {
-    scroll-snap-align: start;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-  .snap-day.has-many-events {
-    justify-content: flex-start;
+  /* ── Lazy-load day sections ── */
+  html { scroll-behavior: smooth; }
+  .day-section {
     padding-top: 2rem;
+    padding-bottom: 2rem;
   }
-
-  /* ── Next-day hint at bottom of snap sections ── */
-  .next-day-hint {
-    margin-top: auto;
+  .lazy-sentinel {
+    height: 1px;
+    width: 100%;
+  }
+  /* ── Lazy-load spinner ── */
+  .load-spinner {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -53,11 +48,10 @@
     padding: 2rem 0;
     color: theme('colors.outline');
     font-size: 0.8125rem;
-    opacity: 0;
-    transition: opacity 0.4s ease;
   }
-  .snap-day:hover .next-day-hint {
-    opacity: 1;
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .load-spinner .material-symbols-outlined {
+    animation: spin 0.8s linear infinite;
   }
 
   /* ── Timeline line connecting events ── */
@@ -80,8 +74,8 @@
     background-color: theme('colors.surface-container');
   }
 
-  /* ── Snap progress indicator ── */
-  .snap-progress {
+  /* ── Day progress indicator (desktop sidebar) ── */
+  .day-progress {
     position: fixed;
     right: 1rem;
     top: 50%;
@@ -91,17 +85,21 @@
     flex-direction: column;
     gap: 0.5rem;
   }
-  .snap-dot {
+  .day-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: theme('colors.outline-variant');
     transition: all 0.3s ease;
+    cursor: pointer;
   }
-  .snap-dot.active {
+  .day-dot.active {
     background: theme('colors.primary');
     transform: scale(1.5);
     box-shadow: 0 0 0 4px theme('colors.primary-container');
+  }
+  .day-dot.loaded {
+    background: theme('colors.outline');
   }
 </style>
 </head>
@@ -115,8 +113,8 @@
   </div>
 </nav>
 
-<!-- Snap progress dots (desktop only) -->
-<div class="snap-progress hidden md:flex" id="snap-progress"></div>
+<!-- Day progress dots (desktop only) -->
+<div class="day-progress hidden md:flex" id="day-progress"></div>
 
 <!-- Main Content Container -->
 <div id="app"><div class="py-20 text-center text-on-surface-variant">加载中...</div></div>
@@ -264,110 +262,89 @@
     </div>`;
   }
 
-  // ── Page render ──
-  (function() {
-    const d = TRAVEL_DETAIL;
+  // ── Render a single day as HTML ──
+  function renderDayHTML(day, dayIdx, isLastDay) {
+    const dayLabel = dayLabels[day.day] || `第${day.day}天`;
+    const dayColor = dayColors[dayIdx % dayColors.length] || 'primary';
     const colorMap = { primary: 'bg-primary text-on-primary', secondary: 'bg-secondary text-on-secondary', tertiary: 'bg-tertiary text-on-tertiary' };
 
-    let daysHTML = d.days.map((day, dayIdx) => {
-      const dayLabel = dayLabels[day.day] || `第${day.day}天`;
-      const dayColor = dayColors[dayIdx % dayColors.length] || 'primary';
-
-      const eventsHTML = day.events.map(ev => {
-        const parsed = parseDetail(ev.detail);
-        const hasActivities = parsed.activities.length > 0;
-        const hasWarnings = parsed.warnings.length > 0;
-        const hasNotes = parsed.notes.trim().length > 0;
-
-        return `
-          <div class="relative z-10 flex gap-6">
-            <!-- Timeline dot -->
-            <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background ${colorMap[ev.color] || colorMap.primary} shadow-sm shrink-0">
-              <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1;">${ev.icon}</span>
-            </div>
-            <!-- Event card -->
-            <div class="flex-1">
-              <div class="mb-3">
-                <h3 class="font-headline text-xl font-bold text-on-surface">${ev.title}</h3>
-                <div class="flex items-center gap-3 mt-1">
-                  <time class="text-sm font-semibold text-${ev.color}">${ev.time}</time>
-                  <span class="px-2 py-0.5 text-xs font-medium bg-surface-container text-on-surface-variant rounded">${ev.type}</span>
-                </div>
-              </div>
-              <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden transition-all duration-300">
-                <div class="p-5 space-y-4">
-                  <!-- Description -->
-                  <p class="text-sm text-on-surface-variant">${ev.description}</p>
-
-                  <!-- Inline activity rows (parsed from detail) -->
-                  ${hasActivities ? `
-                  <div class="bg-surface-container-low/50 rounded-lg p-3 space-y-1">
-                    ${renderActivities(parsed.activities)}
-                  </div>
-                  ` : ''}
-
-                  <!-- Warnings parsed from detail -->
-                  ${hasWarnings ? renderWarnings(parsed.warnings) : ''}
-                </div>
-
-                <!-- Supplementary notes in <details> -->
-                ${hasNotes ? `
-                <details class="group border-t border-outline-variant">
-                  <summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-surface-container-low transition-colors list-none">
-                    <span class="text-sm font-medium text-primary flex items-center gap-2">
-                      补充说明 <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
-                    </span>
-                  </summary>
-                  <div class="px-5 pb-5 text-sm text-on-surface-variant">
-                    <p class="whitespace-pre-line">${parsed.notes}</p>
-                  </div>
-                </details>
-                ` : ''}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
+    const eventsHTML = day.events.map(ev => {
+      const parsed = parseDetail(ev.detail);
+      const hasActivities = parsed.activities.length > 0;
+      const hasWarnings = parsed.warnings.length > 0;
+      const hasNotes = parsed.notes.trim().length > 0;
 
       return `
-        <section class="snap-day${day.events.length >= 2 ? ' has-many-events' : ''} pt-8 pb-8" id="day-${day.day}">
-          <!-- Day header -->
-          <div class="sticky top-[4.5rem] z-30 bg-background/90 backdrop-blur-md py-4 mb-8 border-b border-outline-variant flex justify-between items-end">
-            <div>
-              <div class="flex items-center gap-3 mb-1">
-                <span class="bg-${dayColor} text-on-${dayColor} text-xs font-bold px-2 py-0.5 rounded">${dayLabel}</span>
-                <span class="text-sm font-medium text-on-surface-variant">${day.date}</span>
+        <div class="relative z-10 flex gap-6">
+          <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background ${colorMap[ev.color] || colorMap.primary} shadow-sm shrink-0">
+            <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1;">${ev.icon}</span>
+          </div>
+          <div class="flex-1">
+            <div class="mb-3">
+              <h3 class="font-headline text-xl font-bold text-on-surface">${ev.title}</h3>
+              <div class="flex items-center gap-3 mt-1">
+                <time class="text-sm font-semibold text-${ev.color}">${ev.time}</time>
+                <span class="px-2 py-0.5 text-xs font-medium bg-surface-container text-on-surface-variant rounded">${ev.type}</span>
               </div>
-              <h2 class="font-display text-3xl font-bold text-on-surface">${day.title}</h2>
             </div>
-            <div class="hidden sm:flex items-center gap-1 text-on-surface-variant text-sm">
-              <span class="material-symbols-outlined text-sm">schedule</span>
-              <span>${day.events.length} 项活动</span>
+            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden transition-all duration-300">
+              <div class="p-5 space-y-4">
+                <p class="text-sm text-on-surface-variant">${ev.description}</p>
+                ${hasActivities ? `
+                <div class="bg-surface-container-low/50 rounded-lg p-3 space-y-1">
+                  ${renderActivities(parsed.activities)}
+                </div>
+                ` : ''}
+                ${hasWarnings ? renderWarnings(parsed.warnings) : ''}
+              </div>
+              ${hasNotes ? `
+              <details class="group border-t border-outline-variant">
+                <summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-surface-container-low transition-colors list-none">
+                  <span class="text-sm font-medium text-primary flex items-center gap-2">
+                    补充说明 <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
+                  </span>
+                </summary>
+                <div class="px-5 pb-5 text-sm text-on-surface-variant">
+                  <p class="whitespace-pre-line">${parsed.notes}</p>
+                </div>
+              </details>
+              ` : ''}
             </div>
           </div>
-
-          <!-- Timeline -->
-          <div class="relative timeline-line space-y-12 pb-8">
-            ${eventsHTML}
-          </div>
-
-          <!-- Next day hint -->
-          ${dayIdx < d.days.length - 1 ? `
-          <div class="next-day-hint">
-            <span class="material-symbols-outlined text-sm">keyboard_arrow_down</span>
-            <span>向下滚动查看${dayLabels[d.days[dayIdx + 1].day] || '下一天'}</span>
-          </div>
-          ` : ''}
-        </section>
+        </div>
       `;
     }).join('');
 
-    // ── Snap progress dots ──
-    const progressHTML = d.days.map((day, i) => `
-      <div class="snap-dot" data-day="${day.day}" title="${day.title}"></div>
-    `).join('');
+    return `
+      <section class="day-section" id="day-${day.day}">
+        <div class="sticky top-[4.5rem] z-30 bg-background/90 backdrop-blur-md py-4 mb-8 border-b border-outline-variant flex justify-between items-end">
+          <div>
+            <div class="flex items-center gap-3 mb-1">
+              <span class="bg-${dayColor} text-on-${dayColor} text-xs font-bold px-2 py-0.5 rounded">${dayLabel}</span>
+              <span class="text-sm font-medium text-on-surface-variant">${day.date}</span>
+            </div>
+            <h2 class="font-display text-3xl font-bold text-on-surface">${day.title}</h2>
+          </div>
+          <div class="hidden sm:flex items-center gap-1 text-on-surface-variant text-sm">
+            <span class="material-symbols-outlined text-sm">schedule</span>
+            <span>${day.events.length} 项活动</span>
+          </div>
+        </div>
+        <div class="relative timeline-line space-y-12 pb-8">
+          ${eventsHTML}
+        </div>
+      </section>`;
+  }
 
-    document.getElementById('app').innerHTML = `
+  // ── Page render with lazy loading ──
+  (function() {
+    const d = TRAVEL_DETAIL;
+    const mainEl = document.getElementById('app');
+    let loadedCount = 0;
+    let isLoading = false;
+
+    // Build hero
+    const heroHTML = `
       <header class="relative w-full h-[550px] min-h-[400px] bg-surface-container-high flex items-end">
         <div class="absolute inset-0 z-0">
           <img alt="${d.title}" class="w-full h-full object-cover" src="${d.heroImage}"/>
@@ -381,29 +358,111 @@
           <p class="text-surface-variant text-lg md:text-xl max-w-2xl drop-shadow-sm">${d.subtitle}</p>
         </div>
       </header>
-      <main class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
-        ${daysHTML}
-        <div class="h-32"></div>
+      <main class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop" id="day-container">
+        <div id="loaded-days"></div>
+        <div class="lazy-sentinel" id="lazy-sentinel"></div>
+        <div class="load-spinner" id="load-spinner">
+          <span class="material-symbols-outlined text-sm">progress_activity</span>
+          <span>加载下一天...</span>
+        </div>
       </main>
-      <div class="snap-progress hidden md:flex">${progressHTML}</div>
     `;
+    mainEl.innerHTML = heroHTML;
 
-    // ── Snap progress indicator ──
-    const observer = new IntersectionObserver((entries) => {
+    // Build progress dots (all days, hidden until loaded)
+    const progressEl = document.getElementById('day-progress');
+    progressEl.innerHTML = d.days.map((day, i) =>
+      `<div class="day-dot loaded" data-day="${day.day}" title="${day.title}"></div>`
+    ).join('');
+
+    // Initial: load Day 1 immediately
+    function loadDay(index) {
+      if (index >= d.days.length || isLoading) return;
+      isLoading = true;
+
+      const day = d.days[index];
+      const html = renderDayHTML(day, index, index === d.days.length - 1);
+      const container = document.getElementById('loaded-days');
+
+      // Create wrapper and inject HTML
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = html;
+      container.appendChild(wrapper.firstElementChild);
+
+      loadedCount = index + 1;
+
+      // Update progress dot
+      const dot = progressEl.querySelector(`.day-dot[data-day="${day.day}"]`);
+      if (dot) dot.classList.add('loaded');
+
+      // Hide spinner if all loaded
+      if (loadedCount >= d.days.length) {
+        document.getElementById('load-spinner').style.display = 'none';
+        document.getElementById('lazy-sentinel').style.display = 'none';
+      }
+
+      isLoading = false;
+    }
+
+    // Load Day 1
+    loadDay(0);
+
+    // Set up active day tracking via IntersectionObserver on all loaded sections
+    const activeObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const dayId = entry.target.id.replace('day-', '');
-        const dot = document.querySelector(`.snap-dot[data-day="${dayId}"]`);
-        if (dot) {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-            dot.classList.add('active');
-          } else {
-            dot.classList.remove('active');
-          }
+        const dot = progressEl.querySelector(`.day-dot[data-day="${dayId}"]`);
+        if (!dot) return;
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.4) {
+          progressEl.querySelectorAll('.day-dot').forEach(d => d.classList.remove('active'));
+          dot.classList.add('active');
         }
       });
-    }, { threshold: [0.5] });
+    }, { threshold: [0.2, 0.4, 0.6] });
 
-    document.querySelectorAll('.snap-day').forEach(section => observer.observe(section));
+    // Observe new day sections as they appear
+    const dayContainer = document.getElementById('day-container');
+    const sectionObserver = new MutationObserver((mutations) => {
+      mutations.forEach(m => {
+        m.addedNodes.forEach(node => {
+          if (node.nodeType === 1 && node.classList.contains('day-section')) {
+            activeObserver.observe(node);
+          }
+        });
+      });
+    });
+    const loadedDays = document.getElementById('loaded-days');
+    if (loadedDays) sectionObserver.observe(loadedDays, { childList: true });
+    // Also observe the first day (already in DOM)
+    document.querySelectorAll('.day-section').forEach(s => activeObserver.observe(s));
+
+    // Lazy-load sentinel: triggers loading next day when scrolled into view
+    const sentinel = document.getElementById('lazy-sentinel');
+    const loadObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !isLoading) {
+          loadDay(loadedCount);
+        }
+      });
+    }, { rootMargin: '200px' });
+    if (sentinel) loadObserver.observe(sentinel);
+
+    // Click on progress dot → scroll to that day
+    progressEl.addEventListener('click', (e) => {
+      const dot = e.target.closest('.day-dot');
+      if (!dot) return;
+      const targetDay = parseInt(dot.dataset.day);
+      const targetIdx = targetDay - 1;
+      // Load all days up to and including the target
+      for (let i = loadedCount; i <= targetIdx; i++) {
+        loadDay(i);
+      }
+      // Scroll after a small delay to allow DOM updates
+      setTimeout(() => {
+        const el = document.getElementById(`day-${targetDay}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    });
   })();
 </script>
 </body>
