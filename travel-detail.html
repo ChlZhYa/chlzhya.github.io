@@ -28,6 +28,81 @@
   body { font-family: 'Inter', sans-serif; }
   h1, h2, h3, .font-display, .font-headline { font-family: 'Hanken Grotesk', sans-serif; }
   .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+  /* ── Snap-scroll day switching ── */
+  html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+  .snap-day {
+    scroll-snap-align: start;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .snap-day.has-many-events {
+    justify-content: flex-start;
+    padding-top: 2rem;
+  }
+
+  /* ── Next-day hint at bottom of snap sections ── */
+  .next-day-hint {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 2rem 0;
+    color: theme('colors.outline');
+    font-size: 0.8125rem;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .snap-day:hover .next-day-hint {
+    opacity: 1;
+  }
+
+  /* ── Timeline line connecting events ── */
+  .timeline-line::before {
+    content: '';
+    position: absolute;
+    top: 2.5rem;
+    bottom: 0;
+    left: 1.25rem;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, #c5c5d4 1rem, #c5c5d4 calc(100% - 1rem), transparent);
+    z-index: 0;
+  }
+
+  /* ── Activity row hover ── */
+  .activity-row {
+    transition: background-color 0.2s ease;
+  }
+  .activity-row:hover {
+    background-color: theme('colors.surface-container');
+  }
+
+  /* ── Snap progress indicator ── */
+  .snap-progress {
+    position: fixed;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .snap-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: theme('colors.outline-variant');
+    transition: all 0.3s ease;
+  }
+  .snap-dot.active {
+    background: theme('colors.primary');
+    transform: scale(1.5);
+    box-shadow: 0 0 0 4px theme('colors.primary-container');
+  }
 </style>
 </head>
 <body class="bg-background text-on-background antialiased">
@@ -40,11 +115,14 @@
   </div>
 </nav>
 
+<!-- Snap progress dots (desktop only) -->
+<div class="snap-progress hidden md:flex" id="snap-progress"></div>
+
 <!-- Main Content Container -->
 <div id="app"><div class="py-20 text-center text-on-surface-variant">加载中...</div></div>
 
 <script>
-  // Navigation
+  // ── Navigation ──
   (function() {
     const nav = document.getElementById('nav-links');
     const current = location.pathname.split('/').pop();
@@ -60,46 +138,237 @@
     });
   })();
 
-  // Page render
+  // ── Detail field parser ──
+  // Extracts inline activity rows + warnings + supplementary notes from the detail string
+  const CLOCK_EMOJI = ['🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚','🕛','🕜','🕝','🕞','🕟','🕠','🕡','🕢','🕣','🕤','🕥','🕦','🕧','🚡'];
+  function startsWithTransportEmoji(s) {
+    return CLOCK_EMOJI.some(emoji => s.startsWith(emoji));
+  }
+
+  function parseDetail(detail) {
+    if (!detail) return { activities: [], warnings: [], notes: '' };
+    const lines = detail.split('\n');
+    const activities = [];
+    const warnings = [];
+    const notes = [];
+
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t) continue;
+
+      // Transport/clock emoji line → activity row
+      if (startsWithTransportEmoji(t)) {
+        const emoji = [...t][0];  // first full Unicode grapheme
+        const content = t.slice([...t][0].length).trim();
+
+        // Try to parse time range + description + duration
+        const timeMatch = content.match(/^(\d{2}:\d{2}[-–]\d{2}:\d{2})\s*→\s*(.+?)(?:（(.+?)）)?$/);
+        if (timeMatch) {
+          activities.push({
+            time: timeMatch[1],
+            desc: timeMatch[2].trim(),
+            duration: timeMatch[3] || '',
+            icon: emoji === '🚡' ? 'cable_car' : 'hiking',
+            color: emoji === '🚡' ? 'tertiary' : 'secondary'
+          });
+        } else {
+          // Simpler format: just a time + description
+          const simpleMatch = content.match(/^(\d{2}:\d{2})\s+(.+)/);
+          if (simpleMatch) {
+            activities.push({
+              time: simpleMatch[1],
+              desc: simpleMatch[2].trim(),
+              duration: '',
+              icon: emoji === '🚡' ? 'cable_car' : 'hiking',
+              color: emoji === '🚡' ? 'tertiary' : 'secondary'
+            });
+          } else {
+            // Clock emoji but unparseable format → keep as note
+            notes.push(t);
+          }
+        }
+        continue;
+      }
+
+      // Warning / important markers → highlighted
+      if (/^[⚠️💧🍞🎯⏰]/.test(t)) {
+        warnings.push(t);
+        continue;
+      }
+
+      // Regular note
+      notes.push(t);
+    }
+
+    return { activities, warnings, notes: notes.join('\n') };
+  }
+
+  // ── Day label mapping ──
+  const dayLabels = ['', '第一天', '第二天', '第三天', '第四天', '第五天', '第六天', '第七天'];
+  const dayColors = ['', 'primary', 'secondary', 'tertiary', 'primary', 'secondary', 'tertiary'];
+
+  // ── Render activities HTML ──
+  function renderActivities(activities) {
+    if (!activities.length) return '';
+    return activities.map(a => `
+      <div class="activity-row flex items-start gap-3 py-2.5 first:pt-0 last:pb-0 rounded-lg transition-colors duration-200">
+        <div class="mt-0.5 bg-surface-container p-1.5 rounded-full text-on-surface-variant shrink-0">
+          <span class="material-symbols-outlined text-xs">${a.icon}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex justify-between items-start gap-2">
+            <h5 class="text-sm font-bold text-on-surface leading-snug">${a.desc}</h5>
+            ${a.duration ? `<span class="text-xs text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded shrink-0 mt-0.5">${a.duration}</span>` : ''}
+          </div>
+          ${a.time ? `<time class="text-xs text-on-surface-variant font-mono mt-0.5 block">${a.time}</time>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── Render warnings HTML ──
+  function renderWarnings(warnings) {
+    if (!warnings.length) return '';
+    return `<div class="space-y-2">
+    ${warnings.map(w => {
+      const clean = w.replace(/^[⚠️💧🍞🎯⏰]\s*/, '');
+      const isWarning = w.startsWith('⚠');
+      const isTarget = w.startsWith('🎯');
+      const isDeadline = w.startsWith('⏰');
+      if (isWarning || isDeadline) {
+        return `
+        <div class="bg-error-container/60 border border-error/20 rounded-xl p-3.5 flex items-start gap-2.5">
+          <span class="material-symbols-outlined text-error text-sm mt-0.5">${isDeadline ? 'schedule' : 'warning'}</span>
+          <div>
+            <p class="text-sm font-semibold text-on-error-container">${isDeadline ? '时间关键节点' : '重要提醒'}</p>
+            <p class="text-xs text-on-error-container/80 mt-0.5">${clean}</p>
+          </div>
+        </div>`;
+      }
+      if (isTarget) {
+        return `
+        <div class="bg-primary-container/30 border border-primary/20 rounded-xl p-3.5 flex items-start gap-2.5">
+          <span class="material-symbols-outlined text-primary text-sm mt-0.5">my_location</span>
+          <div>
+            <p class="text-sm font-semibold text-on-primary-container">🎯 检查点</p>
+            <p class="text-xs text-on-primary-container/80 mt-0.5">${clean}</p>
+          </div>
+        </div>`;
+      }
+      return `
+      <div class="bg-surface-container border border-outline-variant/30 rounded-lg px-3.5 py-2.5 text-xs text-on-surface-variant flex items-start gap-2">
+        <span class="material-symbols-outlined text-xs mt-0.5">info</span>
+        <span>${clean}</span>
+      </div>`;
+    }).join('')}
+    </div>`;
+  }
+
+  // ── Page render ──
   (function() {
     const d = TRAVEL_DETAIL;
     const colorMap = { primary: 'bg-primary text-on-primary', secondary: 'bg-secondary text-on-secondary', tertiary: 'bg-tertiary text-on-tertiary' };
-    const typeColors = { primary: 'bg-primary/10 text-primary', secondary: 'bg-secondary/10 text-secondary', tertiary: 'bg-tertiary/10 text-tertiary' };
 
-    let daysHTML = d.days.map(day => `
-      <section class="relative">
-        <div class="sticky top-24 z-30 bg-background/90 backdrop-blur-md py-4 mb-8 border-b border-outline-variant flex justify-between items-end">
-          <div>
-            <h2 class="font-display text-3xl font-bold text-on-surface">${day.title}</h2>
-            <p class="text-on-surface-variant mt-1">${day.date}</p>
-          </div>
-        </div>
-        <div class="relative pl-10 md:pl-14 before:absolute before:left-[1.125rem] md:before:left-[1.375rem] before:top-0 before:bottom-0 before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-outline-variant before:to-transparent space-y-6">
-          ${day.events.map((ev, i) => `
-            <div class="relative group">
-              <div class="absolute left-[-1.625rem] md:left-[-2rem] top-1 flex items-center justify-center w-8 h-8 rounded-full border-4 border-background ${colorMap[ev.color] || colorMap.primary} shadow z-10">
-                <span class="material-symbols-outlined text-xs" style="font-variation-settings:'FILL' 1;">${ev.icon}</span>
-              </div>
-              <div class="p-5 rounded-xl bg-surface-container-low border border-outline-variant shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300">
-                <div class="flex items-center justify-between mb-2">
-                  <time class="font-mono text-sm font-semibold text-${ev.color}">${ev.time}</time>
-                  <span class="px-2 py-0.5 text-xs font-medium bg-tertiary-container text-on-tertiary-container rounded-sm">${ev.type}</span>
+    let daysHTML = d.days.map((day, dayIdx) => {
+      const dayLabel = dayLabels[day.day] || `第${day.day}天`;
+      const dayColor = dayColors[dayIdx % dayColors.length] || 'primary';
+
+      const eventsHTML = day.events.map(ev => {
+        const parsed = parseDetail(ev.detail);
+        const hasActivities = parsed.activities.length > 0;
+        const hasWarnings = parsed.warnings.length > 0;
+        const hasNotes = parsed.notes.trim().length > 0;
+
+        return `
+          <div class="relative z-10 flex gap-6">
+            <!-- Timeline dot -->
+            <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background ${colorMap[ev.color] || colorMap.primary} shadow-sm shrink-0">
+              <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1;">${ev.icon}</span>
+            </div>
+            <!-- Event card -->
+            <div class="flex-1">
+              <div class="mb-3">
+                <h3 class="font-headline text-xl font-bold text-on-surface">${ev.title}</h3>
+                <div class="flex items-center gap-3 mt-1">
+                  <time class="text-sm font-semibold text-${ev.color}">${ev.time}</time>
+                  <span class="px-2 py-0.5 text-xs font-medium bg-surface-container text-on-surface-variant rounded">${ev.type}</span>
                 </div>
-                <h3 class="font-display text-xl font-bold text-on-surface mb-2">${ev.title}</h3>
-                <p class="text-on-surface-variant text-sm mb-3">${ev.description}</p>
-                <details class="group/details">
-                  <summary class="text-sm font-medium text-primary hover:text-primary-container flex items-center gap-1 transition-colors cursor-pointer list-none">查看详情 <span class="material-symbols-outlined text-sm group-open/details:rotate-180 transition-transform">expand_more</span></summary>
-                  <p class="text-on-surface-variant text-sm mt-3 pt-3 border-t border-outline-variant/30 whitespace-pre-line">${ev.detail || '暂无更多详情。'}</p>
+              </div>
+              <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden transition-all duration-300">
+                <div class="p-5 space-y-4">
+                  <!-- Description -->
+                  <p class="text-sm text-on-surface-variant">${ev.description}</p>
+
+                  <!-- Inline activity rows (parsed from detail) -->
+                  ${hasActivities ? `
+                  <div class="bg-surface-container-low/50 rounded-lg p-3 space-y-1">
+                    ${renderActivities(parsed.activities)}
+                  </div>
+                  ` : ''}
+
+                  <!-- Warnings parsed from detail -->
+                  ${hasWarnings ? renderWarnings(parsed.warnings) : ''}
+                </div>
+
+                <!-- Supplementary notes in <details> -->
+                ${hasNotes ? `
+                <details class="group border-t border-outline-variant">
+                  <summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-surface-container-low transition-colors list-none">
+                    <span class="text-sm font-medium text-primary flex items-center gap-2">
+                      补充说明 <span class="material-symbols-outlined text-sm transition-transform group-open:rotate-180">expand_more</span>
+                    </span>
+                  </summary>
+                  <div class="px-5 pb-5 text-sm text-on-surface-variant">
+                    <p class="whitespace-pre-line">${parsed.notes}</p>
+                  </div>
                 </details>
+                ` : ''}
               </div>
             </div>
-          `).join('')}
-        </div>
-      </section>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <section class="snap-day${day.events.length >= 2 ? ' has-many-events' : ''} pt-8 pb-8" id="day-${day.day}">
+          <!-- Day header -->
+          <div class="sticky top-[4.5rem] z-30 bg-background/90 backdrop-blur-md py-4 mb-8 border-b border-outline-variant flex justify-between items-end">
+            <div>
+              <div class="flex items-center gap-3 mb-1">
+                <span class="bg-${dayColor} text-on-${dayColor} text-xs font-bold px-2 py-0.5 rounded">${dayLabel}</span>
+                <span class="text-sm font-medium text-on-surface-variant">${day.date}</span>
+              </div>
+              <h2 class="font-display text-3xl font-bold text-on-surface">${day.title}</h2>
+            </div>
+            <div class="hidden sm:flex items-center gap-1 text-on-surface-variant text-sm">
+              <span class="material-symbols-outlined text-sm">schedule</span>
+              <span>${day.events.length} 项活动</span>
+            </div>
+          </div>
+
+          <!-- Timeline -->
+          <div class="relative timeline-line space-y-12 pb-8">
+            ${eventsHTML}
+          </div>
+
+          <!-- Next day hint -->
+          ${dayIdx < d.days.length - 1 ? `
+          <div class="next-day-hint">
+            <span class="material-symbols-outlined text-sm">keyboard_arrow_down</span>
+            <span>向下滚动查看${dayLabels[d.days[dayIdx + 1].day] || '下一天'}</span>
+          </div>
+          ` : ''}
+        </section>
+      `;
+    }).join('');
+
+    // ── Snap progress dots ──
+    const progressHTML = d.days.map((day, i) => `
+      <div class="snap-dot" data-day="${day.day}" title="${day.title}"></div>
     `).join('');
 
     document.getElementById('app').innerHTML = `
-      <header class="relative w-full h-[500px] min-h-[400px] bg-surface-container-high flex items-end">
+      <header class="relative w-full h-[550px] min-h-[400px] bg-surface-container-high flex items-end">
         <div class="absolute inset-0 z-0">
           <img alt="${d.title}" class="w-full h-full object-cover" src="${d.heroImage}"/>
           <div class="absolute inset-0 bg-gradient-to-t from-on-background/80 via-on-background/40 to-transparent"></div>
@@ -112,11 +381,29 @@
           <p class="text-surface-variant text-lg md:text-xl max-w-2xl drop-shadow-sm">${d.subtitle}</p>
         </div>
       </header>
-      <main class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-16">
-        <div class="space-y-16">${daysHTML}</div>
-
+      <main class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+        ${daysHTML}
+        <div class="h-32"></div>
       </main>
+      <div class="snap-progress hidden md:flex">${progressHTML}</div>
     `;
+
+    // ── Snap progress indicator ──
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const dayId = entry.target.id.replace('day-', '');
+        const dot = document.querySelector(`.snap-dot[data-day="${dayId}"]`);
+        if (dot) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            dot.classList.add('active');
+          } else {
+            dot.classList.remove('active');
+          }
+        }
+      });
+    }, { threshold: [0.5] });
+
+    document.querySelectorAll('.snap-day').forEach(section => observer.observe(section));
   })();
 </script>
 </body>
