@@ -490,15 +490,15 @@ main {
     inset 0 3px 0 rgba(255, 181, 71, 0.56);
 }
 
-/* —— 旅行圆柱：竖轴旋转 + 中央时间轴 —— */
+/* —— 旅行圆柱：水平轴滚筒 + 螺旋下沉 —— */
 .travel {
   padding-bottom: 60px;
 }
 
-/* stage 拉出足够的高度，滚动进度才映射到整圈旋转 */
+/* stage 拉出足够的高度，滚动进度映射到旋转 + 下沉 */
 .cylinder-stage {
   position: relative;
-  height: 200vh;
+  height: 240vh;
 }
 
 .cylinder-scene {
@@ -507,28 +507,27 @@ main {
   height: 100vh;
   display: grid;
   place-items: center;
-  perspective: 1400px;
+  perspective: 1500px;
+  perspective-origin: 50% 40%;
 }
 
-/* 中央 3D 圆柱体（有透视深度的发光管） */
+/* 中央水平 3D 圆柱体（横躺的发光管） */
 .spine-3d {
   position: relative;
   z-index: 2;
-  width: 64px;
-  height: min(62vh, 560px);
+  height: 64px;
   margin: 0 auto;
   transform-style: preserve-3d;
   pointer-events: none;
 }
 
-/* 端盖：水平圆盘，给出圆柱体的开口与厚度 */
+/* 左 / 右端盖：竖直的圆盘，给出圆柱体开口 */
 .spine-cap {
   position: absolute;
-  left: 50%;
+  top: 50%;
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  transform: translate(-50%, -50%) rotateX(90deg);
   background: radial-gradient(
     circle,
     rgba(20, 184, 216, 0.55) 0%,
@@ -538,45 +537,41 @@ main {
   box-shadow: 0 0 24px rgba(20, 184, 216, 0.45);
 }
 
-.cap-top {
-  top: 0;
+.cap-left {
+  left: 0;
+  transform: translateY(-50%) rotateY(90deg);
 }
 
-.cap-bottom {
-  bottom: 0;
-  transform: translate(-50%, 50%) rotateX(90deg);
+.cap-right {
+  right: 0;
+  transform: translateY(-50%) rotateY(90deg);
 }
 
-/* 内核辉光：比管身更亮的垂直光柱，营造内部能量 */
+/* 内核辉光：沿水平轴的光柱 */
 .spine-core {
   position: absolute;
-  left: 50%;
-  top: 0;
-  width: 14px;
-  height: 100%;
-  transform: translateX(-50%);
+  inset: 0;
   border-radius: 999px;
   background: linear-gradient(
-    180deg,
+    90deg,
     transparent,
-    rgba(255, 255, 255, 0.85) 12%,
-    rgba(20, 184, 216, 0.9) 50%,
-    rgba(255, 255, 255, 0.85) 88%,
+    rgba(255, 255, 255, 0.7) 15%,
+    rgba(20, 184, 216, 0.85) 50%,
+    rgba(255, 255, 255, 0.7) 85%,
     transparent
   );
-  box-shadow: 0 0 30px rgba(20, 184, 216, 0.7), 0 0 60px rgba(155, 220, 69, 0.3);
+  box-shadow: 0 0 30px rgba(20, 184, 216, 0.6);
   filter: blur(1px);
 }
 
-/* 管壁：多个薄圆环堆叠，每个 rotateX(90) 变水平圆环 → 拼成圆柱体表面 */
+/* 沿水平轴排列的薄圆盘（每个已是竖直圆盘），拼成圆柱体表面 */
 .spine-ring {
   position: absolute;
-  left: 50%;
   top: 50%;
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  border: 1px solid rgba(20, 184, 216, 0.35);
+  border: 1px solid rgba(20, 184, 216, 0.32);
   background: radial-gradient(
     circle,
     transparent 0%,
@@ -584,95 +579,34 @@ main {
     rgba(20, 184, 216, 0.12) 78%,
     rgba(155, 220, 69, 0.1) 100%
   );
-  box-shadow: 0 0 10px rgba(20, 184, 216, 0.18);
+  box-shadow: 0 0 10px rgba(20, 184, 216, 0.16);
+  transform: translateY(-50%) rotateY(90deg);
 }
 
-/* 时间轴轨道：贴在圆柱体表面，随旋转一起转 */
-.spine-track {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-}
-
-.spine-node {
-  position: absolute;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.spine-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 0 0 3px rgba(20, 184, 216, 0.18), 0 0 14px rgba(20, 184, 216, 0.5);
-  transition: transform 240ms ease, box-shadow 240ms ease;
-}
-
-.spine-label {
-  position: absolute;
-  left: 24px;
-  white-space: nowrap;
-  display: grid;
-  gap: 2px;
-  opacity: 0.5;
-  transition: opacity 240ms ease;
-}
-
-.spine-label strong {
-  color: #0c7f9d;
-  font-size: 0.7rem;
-  font-weight: 820;
-  text-transform: uppercase;
-}
-
-.spine-label em {
-  color: #4a5765;
-  font-size: 0.78rem;
-  font-style: normal;
-}
-
-.spine-node.is-active {
-  z-index: 3;
-}
-
-.spine-node.is-active .spine-dot {
-  transform: scale(1.6);
-  background: #fff;
-  box-shadow:
-    0 0 0 5px rgba(20, 184, 216, 0.25),
-    0 0 26px rgba(20, 184, 216, 0.75);
-}
-
-.spine-node.is-active .spine-label {
-  opacity: 1;
-}
-
-/* 卡片环绕成的圆柱 */
+/* —— 卡片：绕水平轴排成滚筒，整体随滚动旋转 + 螺旋下沉 —— */
 .cylinder-ring {
   position: absolute;
   z-index: 1;
   transform-style: preserve-3d;
-  width: 240px;
-  height: 320px;
   will-change: transform;
 }
 
 .cyl-card {
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 50%;
+  transform-origin: 50% 50%;
+  transform-style: preserve-3d;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   width: 240px;
-  height: 320px;
-  margin: 0;
+  height: 300px;
+  margin-left: -120px;
+  margin-top: -150px;
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.8);
   box-shadow: var(--soft-shadow);
   backdrop-filter: blur(16px);
   color: inherit;
@@ -682,7 +616,14 @@ main {
 
 /* 非正前方的卡片降低存在感，强化圆柱透视 */
 .cyl-card:not(.is-front) {
-  filter: saturate(0.85) brightness(0.92);
+  filter: saturate(0.82) brightness(0.9);
+}
+
+/* 背面卡片隐藏，避免从正面穿帮 */
+.cyl-card.is-back {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .cyl-card.is-front {
@@ -776,8 +717,7 @@ main {
     display: block;
   }
 
-  .spine-3d,
-  .spine-track {
+  .spine-3d {
     display: none;
   }
 
@@ -793,10 +733,12 @@ main {
 
   .cyl-card {
     position: relative;
-    inset: auto;
+    left: auto;
+    top: auto;
     width: 100%;
     height: auto;
     transform: none !important;
+    transform-origin: 50% 50%;
     filter: none;
   }
 

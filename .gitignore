@@ -10,3 +10,8 @@ Thumbs.db
 !.vscode/extensions.json
 .idea
 *.log
+
+# CDP 截图/探针临时产物
+shot-*.png
+.shot-*.png
+.screenshot-*.png
