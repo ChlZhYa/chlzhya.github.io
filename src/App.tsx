@@ -4,6 +4,7 @@ import { siteConfig } from "./content/site.config";
 import Home from "./pages/Home";
 import Learning from "./pages/Learning";
 import Travel from "./pages/Travel";
+import TravelDetail from "./pages/TravelDetail";
 
 function App() {
   const { pathname } = useLocation();
@@ -37,6 +38,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/learning" element={<Learning />} />
           <Route path="/travel" element={<Travel />} />
+          <Route path="/travel/:slug" element={<TravelDetail />} />
         </Routes>
       </main>
       <Footer />

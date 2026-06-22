@@ -101,12 +101,26 @@ export default function TechCanvas() {
       context.font = "600 12px Inter, system-ui, sans-serif";
       context.textAlign = "center";
 
+      const sigLayer = tokenLayers.length - 1;
+      const sigRow = Math.floor(tokenRows / 2);
       points.forEach((point, index) => {
         const pulse = 0.35 + Math.sin(time * 0.032 + index) * 0.18;
-        context.fillStyle = index % 5 === 0 ? "rgba(172, 239, 104, 0.45)" : "rgba(28, 172, 224, 0.34)";
-        context.beginPath();
-        context.arc(point.x, point.y, 2 + pulse, 0, Math.PI * 2);
-        context.fill();
+        const isSignature = point.layerIndex === sigLayer && point.rowIndex === sigRow;
+        if (isSignature) {
+          context.fillStyle = "rgba(13, 109, 134, 0.18)";
+          context.beginPath();
+          context.arc(point.x, point.y, 7 + pulse * 1.6, 0, Math.PI * 2);
+          context.fill();
+          context.fillStyle = "rgba(11, 86, 106, 0.95)";
+          context.beginPath();
+          context.arc(point.x, point.y, 3.4 + pulse, 0, Math.PI * 2);
+          context.fill();
+        } else {
+          context.fillStyle = index % 5 === 0 ? "rgba(172, 239, 104, 0.45)" : "rgba(28, 172, 224, 0.34)";
+          context.beginPath();
+          context.arc(point.x, point.y, 2 + pulse, 0, Math.PI * 2);
+          context.fill();
+        }
 
         if (point.rowIndex === 0) {
           context.fillStyle = "rgba(16, 42, 58, 0.16)";

@@ -226,6 +226,13 @@ main {
   opacity: 0.9;
 }
 
+.page-particles {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
 .content-section {
   width: min(1120px, calc(100% - 48px));
   margin: 0 auto;
@@ -483,8 +490,391 @@ main {
     inset 0 3px 0 rgba(255, 181, 71, 0.56);
 }
 
+/* —— 旅行圆柱：竖轴旋转 + 中央时间轴 —— */
 .travel {
-  padding-bottom: 120px;
+  padding-bottom: 60px;
+}
+
+/* stage 拉出足够的高度，滚动进度才映射到整圈旋转 */
+.cylinder-stage {
+  position: relative;
+  height: 200vh;
+}
+
+.cylinder-scene {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  perspective: 1400px;
+}
+
+/* 中央 3D 圆柱体（有透视深度的发光管） */
+.spine-3d {
+  position: relative;
+  z-index: 2;
+  width: 64px;
+  height: min(62vh, 560px);
+  margin: 0 auto;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+/* 端盖：水平圆盘，给出圆柱体的开口与厚度 */
+.spine-cap {
+  position: absolute;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotateX(90deg);
+  background: radial-gradient(
+    circle,
+    rgba(20, 184, 216, 0.55) 0%,
+    rgba(20, 184, 216, 0.18) 55%,
+    transparent 72%
+  );
+  box-shadow: 0 0 24px rgba(20, 184, 216, 0.45);
+}
+
+.cap-top {
+  top: 0;
+}
+
+.cap-bottom {
+  bottom: 0;
+  transform: translate(-50%, 50%) rotateX(90deg);
+}
+
+/* 内核辉光：比管身更亮的垂直光柱，营造内部能量 */
+.spine-core {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 14px;
+  height: 100%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 255, 255, 0.85) 12%,
+    rgba(20, 184, 216, 0.9) 50%,
+    rgba(255, 255, 255, 0.85) 88%,
+    transparent
+  );
+  box-shadow: 0 0 30px rgba(20, 184, 216, 0.7), 0 0 60px rgba(155, 220, 69, 0.3);
+  filter: blur(1px);
+}
+
+/* 管壁：多个薄圆环堆叠，每个 rotateX(90) 变水平圆环 → 拼成圆柱体表面 */
+.spine-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 1px solid rgba(20, 184, 216, 0.35);
+  background: radial-gradient(
+    circle,
+    transparent 0%,
+    transparent 62%,
+    rgba(20, 184, 216, 0.12) 78%,
+    rgba(155, 220, 69, 0.1) 100%
+  );
+  box-shadow: 0 0 10px rgba(20, 184, 216, 0.18);
+}
+
+/* 时间轴轨道：贴在圆柱体表面，随旋转一起转 */
+.spine-track {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.spine-node {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.spine-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 3px rgba(20, 184, 216, 0.18), 0 0 14px rgba(20, 184, 216, 0.5);
+  transition: transform 240ms ease, box-shadow 240ms ease;
+}
+
+.spine-label {
+  position: absolute;
+  left: 24px;
+  white-space: nowrap;
+  display: grid;
+  gap: 2px;
+  opacity: 0.5;
+  transition: opacity 240ms ease;
+}
+
+.spine-label strong {
+  color: #0c7f9d;
+  font-size: 0.7rem;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.spine-label em {
+  color: #4a5765;
+  font-size: 0.78rem;
+  font-style: normal;
+}
+
+.spine-node.is-active {
+  z-index: 3;
+}
+
+.spine-node.is-active .spine-dot {
+  transform: scale(1.6);
+  background: #fff;
+  box-shadow:
+    0 0 0 5px rgba(20, 184, 216, 0.25),
+    0 0 26px rgba(20, 184, 216, 0.75);
+}
+
+.spine-node.is-active .spine-label {
+  opacity: 1;
+}
+
+/* 卡片环绕成的圆柱 */
+.cylinder-ring {
+  position: absolute;
+  z-index: 1;
+  transform-style: preserve-3d;
+  width: 240px;
+  height: 320px;
+  will-change: transform;
+}
+
+.cyl-card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 240px;
+  height: 320px;
+  margin: 0;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: var(--soft-shadow);
+  backdrop-filter: blur(16px);
+  color: inherit;
+  backface-visibility: hidden;
+  transition: box-shadow 280ms ease, filter 280ms ease;
+}
+
+/* 非正前方的卡片降低存在感，强化圆柱透视 */
+.cyl-card:not(.is-front) {
+  filter: saturate(0.85) brightness(0.92);
+}
+
+.cyl-card.is-front {
+  box-shadow: 0 34px 80px rgba(20, 92, 124, 0.22);
+  filter: none;
+}
+
+.cyl-cover {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(20, 184, 216, 0.14), rgba(155, 220, 69, 0.12));
+}
+
+.cyl-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cyl-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(19, 32, 43, 0.42));
+}
+
+.cyl-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #526170;
+  font-size: 0.7rem;
+  font-weight: 820;
+  backdrop-filter: blur(10px);
+}
+
+.cyl-badge.ready {
+  color: #0d6d86;
+  background: rgba(20, 184, 216, 0.16);
+}
+
+.cyl-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px 18px;
+}
+
+.cyl-period {
+  color: #0c7f9d;
+  font-size: 0.72rem;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.cyl-info h3 {
+  margin: 0;
+  color: #152331;
+  font-size: 1.08rem;
+}
+
+.cyl-info p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cyl-card.is-placeholder .cyl-cover img {
+  filter: saturate(0.6) brightness(1.02);
+}
+
+/* 窄屏：圆柱 3D 容易溢出/难操作，回退为单列卡片，时间轴隐藏 */
+@media (max-width: 760px) {
+  .cylinder-stage {
+    height: auto;
+  }
+
+  .cylinder-scene {
+    position: relative;
+    height: auto;
+    perspective: none;
+    display: block;
+  }
+
+  .spine-3d,
+  .spine-track {
+    display: none;
+  }
+
+  .cylinder-ring {
+    position: relative;
+    transform: none !important;
+    width: 100%;
+    height: auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .cyl-card {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: auto;
+    transform: none !important;
+    filter: none;
+  }
+
+  .cyl-card .cyl-info p {
+    -webkit-line-clamp: unset;
+  }
+}
+
+/* —— 旅行详情页 —— */
+.trip-detail {
+  position: relative;
+  padding-top: 110px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 18px;
+  color: #0c7f9d;
+  font-size: 0.88rem;
+  font-weight: 760;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.trip-detail-header {
+  margin-bottom: 30px;
+}
+
+.trip-detail-header h2 {
+  margin: 8px 0 12px;
+  color: #14202b;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  font-weight: 760;
+  line-height: 1.04;
+}
+
+.trip-detail-header p {
+  margin: 0;
+  max-width: 720px;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.72;
+}
+
+.trip-detail-period {
+  color: #0c7f9d;
+  font-size: 0.8rem;
+  font-weight: 820;
+}
+
+.trip-detail-empty {
+  margin-top: 8px;
+  padding: 48px 28px;
+  border: 1px dashed rgba(20, 184, 216, 0.32);
+  border-radius: 24px;
+  background: rgba(248, 252, 253, 0.7);
+  text-align: center;
+}
+
+.trip-detail-empty span {
+  display: block;
+  color: #0c7f9d;
+  font-size: 0.82rem;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.trip-detail-empty p {
+  margin: 12px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* 详情页顶部加间距，让 travel-layout 不紧贴标题 */
+.trip-detail .travel-layout {
+  margin-top: 20px;
 }
 
 .travel-layout {

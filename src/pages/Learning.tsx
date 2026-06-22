@@ -1,10 +1,12 @@
 import { ArchiveList, SectionLabel } from "../components/shared";
+import ParticlesBackground from "../components/ParticlesBackground";
 import { learningConfig } from "../content/site.config";
 import { learningArchive, learningPaths, resources } from "../content/learning";
 
 export default function Learning() {
   return (
     <section className="content-section learning section-anchor">
+      <ParticlesBackground theme="learning" />
       <SectionLabel index="01" label="学习" />
       <div className="section-heading reveal">
         <h2>沉下来的字，才经得起回看。</h2>

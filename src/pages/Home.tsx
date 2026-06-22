@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import TechCanvas from "../components/TechCanvas";
 import { siteConfig } from "../content/site.config";
 import { learningPaths } from "../content/learning";
-import { currentTrip, routeStops } from "../content/travel";
+import { featuredTrip, nextTrip } from "../content/travel";
 
 export default function Home() {
   const activePaths = learningPaths.filter((path) => path.status === "active");
@@ -52,15 +52,15 @@ export default function Home() {
 
       <section className="content-section section-anchor">
         <div className="section-heading reveal">
-          <h2>下一程</h2>
+          <h2>{nextTrip ? "下一程" : "最近一程"}</h2>
         </div>
         <article className="trip-summary reveal">
-          <span>{currentTrip.period}</span>
-          <h3>{currentTrip.title}</h3>
-          <p>{currentTrip.summary}</p>
+          <span>{featuredTrip.period}</span>
+          <h3>{featuredTrip.title}</h3>
+          <p>{featuredTrip.summary}</p>
         </article>
         <div className="route-line reveal" aria-label="旅行路线">
-          {routeStops.map((stop, index) => (
+          {featuredTrip.routeStops?.map((stop, index) => (
             <div className="route-stop" key={stop}>
               <span>{String(index + 1).padStart(2, "0")}</span>
               <strong>{stop}</strong>
