@@ -65,6 +65,12 @@ function Header() {
           </NavLink>
         ))}
       </nav>
+      <div className="header-status" aria-label="站点状态">
+        <span className="status-local">本地内容<small>Local</small></span>
+        <span className="status-update">持续更新<small>Update</small></span>
+        <span className="status-date">最近记录<small>2025-05-31</small></span>
+        <span className="status-menu" aria-hidden="true" />
+      </div>
     </header>
   );
 }

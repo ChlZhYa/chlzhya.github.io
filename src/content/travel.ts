@@ -47,7 +47,7 @@ export const trips: Trip[] = [
     slug: "kansai",
     period: "下一次旅行",
     title: "关西慢行计划",
-    summary: "以京都、奈良、大阪为主线，保留足够空白时间，让路线更像故事而不是打卡清单。",
+    summary: "以京都、奈良、大阪为主线，保留机动时间，减少重复换乘和高强度打卡。",
     cover:
       "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80",
     status: "complete",
@@ -55,24 +55,24 @@ export const trips: Trip[] = [
     itinerary: [
       {
         day: "第 01 天",
-        title: "抵达与慢速进入",
-        detail: "安顿、散步、熟悉街区，把节奏从日常切换到旅行。",
+        title: "抵达与入住",
+        detail: "完成交通、入住和周边熟悉，把第一天控制在低消耗范围内。",
       },
       {
         day: "第 02 天",
-        title: "寺院、小巷和咖啡",
-        detail: "围绕老街、书店、庭院和小咖啡馆安排一整天。",
+        title: "京都核心路线",
+        detail: "围绕老街、书店、庭院和咖啡馆安排一整天，减少跨区移动。",
       },
       {
         day: "第 03 天",
-        title: "列车与城市切换",
-        detail: "在城市之间移动，给临时发现和绕路保留空间。",
+        title: "城市切换",
+        detail: "通过列车在城市之间移动，预留临时调整和备用路线。",
       },
     ],
     destinations: [
-      { city: "京都", note: "老街、庭院、夜间散步", accent: "cyan" },
-      { city: "奈良", note: "公园、神社、慢节奏", accent: "lime" },
-      { city: "大阪", note: "食物路线和城市灯光", accent: "coral" },
+      { city: "京都", note: "老街、庭院、书店", accent: "cyan" },
+      { city: "奈良", note: "公园、神社、短途停留", accent: "lime" },
+      { city: "大阪", note: "餐食、交通和夜间路线", accent: "coral" },
     ],
     gallery: [
       {
@@ -93,7 +93,7 @@ export const trips: Trip[] = [
     slug: "chuanxi",
     period: "2025 秋",
     title: "成都与川西边缘",
-    summary: "城市、美食和向山而行的短线记录。",
+    summary: "成都城区和川西短线的交通、餐食与停留记录。",
     cover:
       "https://images.unsplash.com/photo-1513415564515-763d91423bdd?auto=format&fit=crop&w=1200&q=80",
     status: "placeholder",
@@ -103,7 +103,7 @@ export const trips: Trip[] = [
     slug: "hongkong",
     period: "2025 夏",
     title: "港岛周末",
-    summary: "高密度城市漫游、海边步行和咖啡地图。",
+    summary: "港岛周末路线，包括步行、交通、餐食和停留点。",
     cover:
       "https://images.unsplash.com/photo-1536599018102-9f803c140fc1?auto=format&fit=crop&w=1200&q=80",
     status: "placeholder",
@@ -112,7 +112,7 @@ export const trips: Trip[] = [
     slug: "future-list",
     period: "持续更新",
     title: "未来目的地清单",
-    summary: "把想去的城市、路线灵感和照片参考先收进档案。",
+    summary: "记录待评估城市、路线参考和照片素材。",
     cover:
       "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80",
     status: "placeholder",

@@ -4,21 +4,14 @@ import { trips } from "../content/travel";
 import type { Trip } from "../content/travel";
 
 const N = trips.length;
-const STEP_DEG = 360 / N; // 相邻卡片在圆周方向上的夹角
-const CARD_W = 240; // 卡片宽（沿轴向）
-const CARD_H = 300; // 卡片高
-
-function radiusFor(count: number, cardHeight: number): number {
-  // 沿水平轴排成正多边形，按卡片高度算半径，留缝隙
-  return cardHeight / (2 * Math.tan(Math.PI / count)) + 24;
-}
-
-// 中央水平圆柱体由多少薄圆盘拼成
-const CORE_RINGS = 16;
+const STEP_DEG = 74;
+const STEP_Y = 340;
+const RADIUS = 300;
+const SPIRAL_TURNS = Math.max(1, N - 1);
 
 export default function CylinderGallery() {
   const stageRef = useRef<HTMLDivElement | null>(null);
-  const [rotation, setRotation] = useState(0);
+  const [progress, setProgress] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const reducedMotion = useMemo(
@@ -26,9 +19,7 @@ export default function CylinderGallery() {
     [],
   );
 
-  const radius = useMemo(() => radiusFor(N, CARD_H), []);
-
-  // 滚动驱动：rotation(旋转) + 整体下沉(translateY)
+  // 滚动驱动：纵向螺旋的旋转、下沉和当前看板。
   useEffect(() => {
     if (reducedMotion) return;
     const stage = stageRef.current;
@@ -41,8 +32,9 @@ export default function CylinderGallery() {
       const vh = window.innerHeight;
       const total = rect.height - vh;
       const scrolled = -rect.top;
-      const progress = Math.min(1, Math.max(0, scrolled / total));
-      setRotation(progress * 360);
+      const nextProgress = Math.min(1, Math.max(0, scrolled / total));
+      setProgress(nextProgress);
+      setActiveIndex(Math.min(N - 1, Math.max(0, Math.round(nextProgress * SPIRAL_TURNS))));
     };
     const onScroll = () => {
       if (raf) return;
@@ -59,70 +51,54 @@ export default function CylinderGallery() {
     };
   }, [reducedMotion]);
 
-  // 当前正前方（最靠观察者）的卡片
-  useEffect(() => {
-    const norm = ((rotation % 360) + 360) % 360;
-    let best = 0;
-    let bestDelta = Infinity;
-    for (let i = 0; i < N; i++) {
-      const cardAngle = (i * STEP_DEG) % 360;
-      let delta = Math.abs(norm - cardAngle);
-      delta = Math.min(delta, 360 - delta);
-      if (delta < bestDelta) {
-        bestDelta = delta;
-        best = i;
-      }
-    }
-    setActiveIndex(best);
-  }, [rotation]);
-
-  // 每张卡片当前相对正前方的角度差，用于判断是否在背面
-  const cardState = (i: number): "front" | "back" => {
-    const norm = ((rotation % 360) + 360) % 360;
-    const cardAngle = (i * STEP_DEG + norm) % 360;
-    // 卡片绕水平轴：0° 在正前方，180° 在正后方。90~270 视为背面。
-    return cardAngle > 90 && cardAngle < 270 ? "back" : "front";
-  };
-
-  const rings = Array.from({ length: CORE_RINGS }, (_, i) => i);
+  const scrollValue = reducedMotion ? activeIndex : progress * SPIRAL_TURNS;
+  const rotation = -scrollValue * STEP_DEG;
+  const descent = -scrollValue * STEP_Y;
+  const timelineProgress = reducedMotion ? 0 : progress * 100;
 
   return (
-    <div className="cylinder-stage" ref={stageRef}>
-      <div className="cylinder-scene" style={{ ["--radius" as string]: `${radius}px` }}>
-        {/* —— 中央水平 3D 圆柱体 —— */}
-        <div className="spine-3d" aria-hidden="true" style={{ width: `${CARD_W * 2.6}px` }}>
-          {/* 左 / 右端盖 */}
-          <div className="spine-cap cap-left" />
-          <div className="spine-cap cap-right" />
-          {/* 内核辉光（沿水平轴的光柱） */}
-          <div className="spine-core" />
-          {/* 沿水平轴排列的薄圆盘，拼成圆柱体表面 */}
-          {rings.map((i) => (
-            <div
-              key={i}
-              className="spine-ring"
-              style={{ left: `${(i / (CORE_RINGS - 1)) * 100}%` }}
-            />
+    <div
+      className="helix-stage"
+      ref={stageRef}
+      style={{ ["--timeline-progress" as string]: `${timelineProgress}%` }}
+    >
+      <div className="helix-scene">
+        <div className="helix-axis" aria-hidden="true">
+          <span className="axis-light" />
+          {trips.map((trip, index) => (
+            <span
+              className={`axis-marker ${index === activeIndex ? "is-active" : ""}`}
+              key={trip.slug}
+              style={{ top: `${10 + (index / Math.max(1, N - 1)) * 78}%` }}
+            >
+              <strong>{trip.period}</strong>
+              <small>{trip.title.replace("计划", "").replace("清单", "")}</small>
+            </span>
           ))}
         </div>
 
-        {/* —— 卡片滚筒：整体随滚动旋转 + 下沉 —— */}
         <div
-          className="cylinder-ring"
+          className="helix-world"
           style={{
-            transform: `translateY(${reducedMotion ? 0 : (rotation / 360) * 360}px) rotateX(${
-              reducedMotion ? 0 : rotation
-            }deg)`,
+            ["--helix-rotation" as string]: `${rotation}deg`,
+            ["--helix-y" as string]: `${descent}px`,
+            ["--helix-radius" as string]: `${RADIUS}px`,
           }}
         >
+          <div className="helix-core" aria-hidden="true" />
+          <div className="helix-rail rail-a" aria-hidden="true" />
+          <div className="helix-rail rail-b" aria-hidden="true" />
+          <div className="helix-rail rail-c" aria-hidden="true" />
+          {trips.map((trip, index) => (
+            <TimePillar key={`${trip.slug}-time`} trip={trip} index={index} active={index === activeIndex} />
+          ))}
           {trips.map((trip, i) => (
-            <CylinderCard
+            <HelixCard
               key={trip.slug}
               trip={trip}
               index={i}
               active={i === activeIndex}
-              face={cardState(i)}
-              radius={radius}
+              focusDistance={Math.abs(i - scrollValue)}
             />
           ))}
         </div>
@@ -131,38 +107,60 @@ export default function CylinderGallery() {
   );
 }
 
-function CylinderCard({
-  trip,
-  index,
-  active,
-  face,
-  radius,
-}: {
+function TimePillar({ trip, index, active }: { trip: Trip; index: number; active: boolean }) {
+  return (
+    <div
+      className={`time-pillar ${active ? "is-active" : ""}`}
+      style={{
+        ["--item-angle" as string]: `${index * STEP_DEG + 28}deg`,
+        ["--item-y" as string]: `${index * STEP_Y}px`,
+      }}
+      aria-hidden="true"
+    >
+      <span>{trip.period}</span>
+    </div>
+  );
+}
+
+function HelixCard({ trip, index, active, focusDistance }: {
   trip: Trip;
   index: number;
   active: boolean;
-  face: "front" | "back";
-  radius: number;
+  focusDistance: number;
 }) {
   const isPlaceholder = trip.status === "placeholder";
+  const clampedDistance = Math.min(2.4, focusDistance);
+  const opacity = Math.max(0.16, 1 - clampedDistance * 0.32);
+  const scale = Math.max(0.92, 1 - clampedDistance * 0.025);
+  const blur = Math.min(2.4, clampedDistance * 0.7);
+  const saturate = 0.72 + opacity * 0.34;
+  const brightness = 0.9 + opacity * 0.1;
   return (
     <Link
-      className={`cyl-card ${active ? "is-front" : ""} ${face === "back" ? "is-back" : ""} ${
-        isPlaceholder ? "is-placeholder" : ""
-      }`}
+      className={`helix-card ${active ? "is-front" : ""} ${isPlaceholder ? "is-placeholder" : ""}`}
       to={`/travel/${trip.slug}`}
-      style={{ transform: `rotateX(${index * STEP_DEG}deg) translateZ(${radius}px)` }}
+      style={{
+        ["--item-angle" as string]: `${index * STEP_DEG}deg`,
+        ["--item-y" as string]: `${index * STEP_Y}px`,
+        ["--card-opacity" as string]: opacity.toFixed(3),
+        ["--card-scale" as string]: scale.toFixed(3),
+        ["--card-blur" as string]: `${blur.toFixed(2)}px`,
+        ["--card-saturate" as string]: saturate.toFixed(3),
+        ["--card-brightness" as string]: brightness.toFixed(3),
+      }}
       aria-label={`${trip.title} · 查看行程`}
     >
-      <div className="cyl-cover">
+      <div className="helix-cover">
         <img src={trip.cover} alt={trip.title} loading="lazy" />
-        <div className="cyl-shade" />
-        {isPlaceholder ? <span className="cyl-badge">待补充</span> : <span className="cyl-badge ready">已记录</span>}
+        <div className="helix-shade" />
+        {isPlaceholder ? <span className="helix-badge">待补充</span> : <span className="helix-badge ready">已记录</span>}
+        <span className="helix-node-index">节点 {String(index + 1).padStart(2, "0")}</span>
       </div>
-      <div className="cyl-info">
-        <span className="cyl-period">{trip.period}</span>
+      <div className="helix-info">
+        <span className="helix-period">{trip.period}</span>
         <h3>{trip.title}</h3>
         <p>{trip.summary}</p>
+        <span className="helix-open">查看行程</span>
       </div>
     </Link>
   );

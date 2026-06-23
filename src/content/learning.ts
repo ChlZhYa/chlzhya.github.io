@@ -57,6 +57,6 @@ export const learningArchive = [
   {
     year: "长期",
     title: "知识管理系统",
-    summary: "沉淀资料索引、读书记录和项目复盘，为后续模块预留结构。",
+    summary: "维护资料索引、读书记录和项目复盘，为后续模块预留结构。",
   },
 ];
