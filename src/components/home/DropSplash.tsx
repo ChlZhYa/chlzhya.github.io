@@ -54,7 +54,7 @@ export function DropSplash() {
         // ignore
       }
       router.replace("/workbench");
-    }, 2600);
+    }, 1700);
     return () => clearTimeout(t);
   }, [play, router]);
 
@@ -69,7 +69,7 @@ export function DropSplash() {
       initial={{ opacity: 1 }}
       // 末段整屏轻淡出，无缝交接给 workbench
       animate={{ opacity: [1, 1, 1, 0] }}
-      transition={{ duration: 2.6, times: [0, 0.7, 0.85, 1], ease: EASE_OUT_SOFT }}
+      transition={{ duration: 1.7, times: [0, 0.6, 0.8, 1], ease: EASE_OUT_SOFT }}
     >
       {/* 湖面噪点底（呼应全站几何噪点语言，极淡） */}
       <div
@@ -97,8 +97,8 @@ export function DropSplash() {
               opacity: [0, 0.7, 0],
             }}
             transition={{
-              duration: 2.2,
-              delay: 0.35 + i * 0.28,
+              duration: 1.5,
+              delay: 0.25 + i * 0.18,
               ease: EASE_OUT_SOFT,
             }}
           />
@@ -138,7 +138,7 @@ export function DropSplash() {
           className="relative z-0 px-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
+          transition={{ duration: 0.4, delay: 0.45 }}
         >
           <Wordmark size="xl" animated />
         </motion.div>
@@ -149,7 +149,7 @@ export function DropSplash() {
         className="meta absolute bottom-8 left-1/2 -translate-x-1/2 text-[var(--slate)] opacity-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 0.6, 0] }}
-        transition={{ duration: 1.4, delay: 1.1, ease: EASE_OUT_SOFT }}
+        transition={{ duration: 1, delay: 0.85, ease: EASE_OUT_SOFT }}
       >
         entering workbench
       </motion.span>
