@@ -1,0 +1,150 @@
+/* ============================================================
+   Archive 长读正文排版 — prose
+   对齐蓝紫冷色设计语言：石板灰正文、蓝紫强调。
+   ============================================================ */
+
+.prose {
+  color: var(--ink-soft);
+  font-size: 1.08rem;
+  line-height: 1.78;
+  letter-spacing: 0.005em;
+}
+
+/* 标题：用 display 字体，与全站一致 */
+.prose h2 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 2.4em 0 0.7em;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.prose h3 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1.8em 0 0.6em;
+}
+
+.prose h4 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 1.5em 0 0.5em;
+}
+
+/* 段落 */
+.prose p {
+  margin: 0 0 1.2em;
+}
+
+/* 强调：蓝色锚点 */
+.prose strong {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+/* 链接 */
+.prose a {
+  color: var(--lime);
+  text-decoration: underline;
+  text-decoration-color: var(--hairline);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s;
+}
+.prose a:hover {
+  text-decoration-color: var(--lime);
+}
+
+/* 行内代码 */
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--mist);
+  color: var(--violet);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+
+/* 代码块 */
+.prose pre {
+  background: var(--void);
+  color: #e2e8f0;
+  padding: 1.1em 1.3em;
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 1.5em 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.prose pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* 引用：左侧蓝紫渐变条 */
+.prose blockquote {
+  margin: 1.6em 0;
+  padding: 0.4em 0 0.4em 1.2em;
+  border-left: 3px solid;
+  border-image: linear-gradient(to bottom, var(--lime), var(--violet)) 1;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* 列表 */
+.prose ul,
+.prose ol {
+  margin: 0 0 1.2em;
+  padding-left: 1.5em;
+}
+.prose li {
+  margin: 0.4em 0;
+}
+.prose ul li::marker {
+  color: var(--lime);
+}
+.prose ol li::marker {
+  color: var(--lime);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+/* 水平线 */
+.prose hr {
+  border: none;
+  border-top: 1px solid var(--hairline);
+  margin: 2.4em 0;
+}
+
+/* 图片 */
+.prose img {
+  width: 100%;
+  border-radius: 10px;
+  margin: 1.6em 0;
+}
+
+/* 表格 */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  font-size: 0.95rem;
+}
+.prose th,
+.prose td {
+  border: 1px solid var(--hairline);
+  padding: 0.6em 0.9em;
+  text-align: left;
+}
+.prose th {
+  background: var(--mist);
+  font-weight: 600;
+  color: var(--ink);
+}
