@@ -54,7 +54,7 @@ export function DropSplash() {
         // ignore
       }
       router.replace("/workbench");
-    }, 1700);
+    }, 1150);
     return () => clearTimeout(t);
   }, [play, router]);
 
@@ -68,8 +68,8 @@ export function DropSplash() {
       className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-[var(--paper)]"
       initial={{ opacity: 1 }}
       // 末段整屏轻淡出，无缝交接给 workbench
-      animate={{ opacity: [1, 1, 1, 0] }}
-      transition={{ duration: 1.7, times: [0, 0.6, 0.8, 1], ease: EASE_OUT_SOFT }}
+      animate={{ opacity: [1, 1, 0] }}
+      transition={{ duration: 1.15, times: [0, 0.82, 1], ease: EASE_OUT_SOFT }}
     >
       {/* 湖面噪点底（呼应全站几何噪点语言，极淡） */}
       <div
@@ -148,8 +148,8 @@ export function DropSplash() {
       <motion.span
         className="meta absolute bottom-8 left-1/2 -translate-x-1/2 text-[var(--slate)] opacity-0"
         initial={{ opacity: 0 }}
-        animate={{ opacity: [0, 0.6, 0] }}
-        transition={{ duration: 1, delay: 0.85, ease: EASE_OUT_SOFT }}
+        animate={{ opacity: [0, 0.55, 0] }}
+        transition={{ duration: 0.7, delay: 0.55, ease: EASE_OUT_SOFT }}
       >
         entering workbench
       </motion.span>
