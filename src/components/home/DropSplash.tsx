@@ -54,7 +54,7 @@ export function DropSplash() {
         // ignore
       }
       router.replace("/workbench");
-    }, 1400);
+    }, 2400);
     return () => clearTimeout(t);
   }, [play, router]);
 
@@ -66,10 +66,10 @@ export function DropSplash() {
   return (
     <motion.div
       className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-[var(--paper)]"
-      initial={{ opacity: 1 }}
-      // 末段整屏轻淡出，无缝交接给 workbench
-      animate={{ opacity: [1, 1, 0] }}
-      transition={{ duration: 1.4, times: [0, 0.82, 1], ease: EASE_OUT_SOFT }}
+      initial={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+      // 末段：整屏轻微放大 + 模糊散焦 + 淡出，像湖面被掀开揭幕，柔和交接给 workbench
+      animate={{ opacity: [1, 1, 0], scale: [1, 1.04, 1.08], filter: ["blur(0px)", "blur(0px)", "blur(6px)"] }}
+      transition={{ duration: 2.4, times: [0, 0.78, 1], ease: EASE_OUT_SOFT }}
     >
       {/* 湖面噪点底（呼应全站几何噪点语言，极淡） */}
       <div
@@ -92,13 +92,13 @@ export function DropSplash() {
             }}
             initial={{ width: 0, height: 0, opacity: 0 }}
             animate={{
-              width: ["0vmin", `${45 + i * 22}vmin`],
-              height: ["0vmin", `${45 + i * 22}vmin`],
-              opacity: [0, 0.7, 0],
+              width: ["0vmin", `${50 + i * 28}vmin`],
+              height: ["0vmin", `${50 + i * 28}vmin`],
+              opacity: [0, 0.75, 0],
             }}
             transition={{
-              duration: 1.2,
-              delay: 0.7 + i * 0.1,
+              duration: 1.6,
+              delay: 0.8 + i * 0.22,
               ease: EASE_OUT_SOFT,
             }}
           />
@@ -118,7 +118,7 @@ export function DropSplash() {
             opacity: [0, 1, 0],
           }}
           transition={{
-            duration: 0.95,
+            duration: 0.85,
             times: [0, 0.85, 1],
             ease: [0.45, 0, 0.55, 1],
           }}
@@ -129,7 +129,7 @@ export function DropSplash() {
           className="absolute z-20 h-1.5 w-1.5 rounded-full bg-white"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: [0, 6, 0], opacity: [0, 0.9, 0] }}
-          transition={{ duration: 0.45, delay: 0.8, ease: EASE_OUT_SOFT }}
+          transition={{ duration: 0.45, delay: 0.72, ease: EASE_OUT_SOFT }}
           style={{ boxShadow: "0 0 12px rgba(255,255,255,0.9)" }}
         />
 
@@ -138,7 +138,7 @@ export function DropSplash() {
           className="relative z-0 px-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.35, delay: 0.85 }}
+          transition={{ duration: 0.4, delay: 0.85 }}
         >
           <Wordmark size="xl" animated />
         </motion.div>
@@ -149,7 +149,7 @@ export function DropSplash() {
         className="meta absolute bottom-8 left-1/2 -translate-x-1/2 text-[var(--slate)] opacity-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 0.55, 0] }}
-        transition={{ duration: 0.55, delay: 0.95, ease: EASE_OUT_SOFT }}
+        transition={{ duration: 0.9, delay: 1.4, ease: EASE_OUT_SOFT }}
       >
         entering workbench
       </motion.span>
