@@ -9,7 +9,7 @@ import { StreamFeed } from "./StreamFeed";
 import { getFeed, streamMap, streamRoadmaps, streams, supportWeeklyPlan } from "@/content/learning";
 
 /**
- * Workbench — Support Agent Harness 学习地图。
+ * Workbench — Agent Harness 双项目学习地图。
  * 左：LivingIndex（9 分支俯瞰） / 右：选中路线的行动路线与关联内容时间线（内部滚动）。
  */
 export function WorkbenchView() {
@@ -28,8 +28,8 @@ export function WorkbenchView() {
     <div className="relative mx-auto min-h-[calc(100dvh-88px)] max-w-[1400px] px-6 pb-16 pt-6 sm:px-10 sm:pt-8">
       <SectionHead
         kicker="01 · workbench"
-        title={<>support agent <em className="not-italic text-[var(--lime)]">harness</em></>}
-        intro="Current 16-week execution map only: customer-support Agent runtime, retrieval as a tool, business APIs, approvals, trace, evaluation, and interview-ready proof of work."
+        title={<>agent <em className="not-italic text-[var(--lime)]">harness</em></>}
+        intro="22-week dual-project execution map: Research Agent (retrieval/synthesis/citation) + Coding Agent (code edit/test/approval), sharing one runtime/trace/eval harness across 9 capability streams."
       />
 
       {/* 主交互区：索引 + 关联时间线 */}
@@ -56,9 +56,9 @@ export function WorkbenchView() {
         <section className="mt-10 border-t border-[var(--hairline)] pt-8">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <span className="meta text-[var(--lime)]">16-week plan</span>
+              <span className="meta text-[var(--lime)]">22-week plan</span>
               <h2 className="mt-2 font-display text-3xl leading-none text-ink">
-                Support Agent Harness Lab
+                Agent Harness · 双项目作品集
               </h2>
             </div>
             <p className="max-w-[52ch] text-sm leading-relaxed text-slate">

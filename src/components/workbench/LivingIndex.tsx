@@ -3,9 +3,9 @@
 import Link from "next/link";
 
 /**
- * LivingIndex — Support Agent Harness 的递进 sprint ladder。
+ * LivingIndex — Agent Harness 双项目的递进 sprint ladder。
  *
- * 3 个阶段（业务建模 / 核心能力 / 系统可靠性），从上到下形成执行路径。
+ * 3 个阶段（接口 / 能力 / 可靠性），从上到下形成执行路径。
  */
 
 const STATUS_OPACITY = { active: 0.95, growing: 0.65, seedling: 0.4 } as const;
