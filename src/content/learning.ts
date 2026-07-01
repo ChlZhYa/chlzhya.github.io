@@ -86,6 +86,10 @@ export const streams: Stream[] = [
     id: "multi-agent", name: "Multi-Agent", code: "MUL", status: "seedling", ring: "outer",
     summary: "角色拆分（研究/代码场景）、委派策略、结果合并与成本控制。",
   },
+  {
+    id: "aci", name: "Agent-Computer Interface", code: "ACI", status: "seedling", ring: "outer",
+    summary: "沙箱执行、路径隔离、diff/patch 编辑、Agent 与计算机的接口设计。",
+  },
 ];
 
 export const streamRoadmaps: Record<string, RoadmapStep[]> = {
@@ -196,6 +200,15 @@ export const streamRoadmaps: Record<string, RoadmapStep[]> = {
       focus: "研究 Agent（Planner/Searcher/Reader/Synthesizer/Verifier）与代码 Agent（Reproducer/Fixer/Tester/Reviewer）的角色拆分。",
       deliverables: ["delegation policy", "单 vs 多 Agent 对比"],
       interviewSignal: "能证明多 Agent 是否带来收益，而不是角色扮演。",
+    },
+  ],
+  aci: [
+    {
+      phase: "code editing interface",
+      horizon: "week 13-15",
+      focus: "Agent 如何安全有效地操作计算机：apply_patch/diff 编辑、路径越界防护、沙箱隔离执行。",
+      deliverables: ["apply_patch", "路径沙箱", "执行隔离"],
+      interviewSignal: "能设计 Agent 操作计算机的安全接口，而不是裸调 shell。",
     },
   ],
 };
@@ -322,7 +335,7 @@ export const supportWeeklyPlan: WeeklyPlan[] = [
   {
     week: "13",
     theme: "代码库读取工具（复用骨架）",
-    streams: ["tool-use", "runtime"],
+    streams: ["tool-use", "runtime", "aci"],
     learn: ["Harness 复用", "代码导航", "代码语义检索"],
     build: ["复用 runtime/trace", "read_file/grep/search_codebase", "代码任务集"],
     output: "coding-agent skeleton + 10 个代码任务",
@@ -330,7 +343,7 @@ export const supportWeeklyPlan: WeeklyPlan[] = [
   {
     week: "14",
     theme: "代码修改与测试验证",
-    streams: ["tool-use", "runtime", "evaluation"],
+    streams: ["tool-use", "runtime", "evaluation", "aci"],
     learn: ["patch 应用", "测试驱动评测", "FAIL_TO_PASS"],
     build: ["apply_patch", "run_tests", "git_diff", "端到端 demo"],
     output: "定位→改→测 端到端 + v0.4",
@@ -338,7 +351,7 @@ export const supportWeeklyPlan: WeeklyPlan[] = [
   {
     week: "15",
     theme: "审批与安全护栏（GRD 核心）",
-    streams: ["guardrails", "workflow", "tool-use"],
+    streams: ["guardrails", "workflow", "tool-use", "aci"],
     learn: ["代码动作风险分级", "push/publish 审批", "沙箱防护"],
     build: ["风险矩阵", "push proposal", "路径越界拦截"],
     output: "高风险动作审批 demo + guardrails 文档",
@@ -370,7 +383,7 @@ export const supportWeeklyPlan: WeeklyPlan[] = [
   {
     week: "19-20",
     theme: "工程化与 GitHub 集成",
-    streams: ["runtime", "tool-use", "evaluation"],
+    streams: ["runtime", "tool-use", "evaluation", "aci"],
     learn: ["沙箱执行", "GitHub API", "CI 集成"],
     build: ["API + 队列 + 沙箱", "GitHub issue→draft PR", "真实任务回归"],
     output: "可部署形态 + v0.9-rc",

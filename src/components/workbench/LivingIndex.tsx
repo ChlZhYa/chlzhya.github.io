@@ -13,7 +13,7 @@ const STATUS_OPACITY = { active: 0.95, growing: 0.65, seedling: 0.4 } as const;
 const RINGS = [
   { key: "inner", label: "phase 01", hint: "Agent 输入、输出与知识入口" },
   { key: "mid", label: "phase 02", hint: "工具、上下文与任务流程" },
-  { key: "outer", label: "phase 03", hint: "可靠性、评估与协作" },
+  { key: "outer", label: "phase 03", hint: "可靠性、评估、协作与计算机接口" },
 ] as const;
 
 const STATUS_LABEL = { active: "●", growing: "◐", seedling: "○" } as const;
