@@ -44,7 +44,7 @@ export function StreamFeed({
       initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: E }}
-      className="flex h-full flex-col"
+      className="flex flex-col"
     >
       {/* 头部：路线标题 + 简介 */}
       <div className="shrink-0 border-b border-[var(--hairline)] pb-4">
@@ -79,102 +79,101 @@ export function StreamFeed({
         )}
       </div>
 
-      <div className="custom-scroll -mr-2 grow overflow-y-auto pr-2">
-        {roadmap.length > 0 && (
-          <div className="border-b border-[var(--hairline-soft)] py-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <span className="meta text-[var(--lime)]">roadmap</span>
-              <span className="meta text-slate">{roadmap.length} moves</span>
-            </div>
-            <div className="flex flex-col gap-3">
-              {roadmap.map((step) => (
-                <div key={`${stream.id}-${step.phase}`} className="border-l border-[var(--hairline)] pl-3">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <span className="font-display text-base font-semibold leading-tight text-ink">
-                      {step.phase}
-                    </span>
-                    <span className="meta text-slate">{step.horizon}</span>
-                  </div>
-                  <p className="mt-1 text-xs leading-relaxed text-ink-soft">{step.focus}</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {step.deliverables.map((deliverable) => (
-                      <span
-                        key={deliverable}
-                        className="rounded border border-[var(--hairline)] bg-white/35 px-2 py-1 text-[0.68rem] leading-tight text-slate"
-                      >
-                        {deliverable}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="mt-2 text-[0.7rem] leading-relaxed text-[var(--violet)]">
-                    面试信号：{step.interviewSignal}
-                  </p>
-                </div>
-              ))}
-            </div>
+      {/* 自然流：roadmap + resources，不再有内部滚动容器 */}
+      {roadmap.length > 0 && (
+        <div className="border-b border-[var(--hairline-soft)] py-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <span className="meta text-[var(--lime)]">roadmap</span>
+            <span className="meta text-slate">{roadmap.length} moves</span>
           </div>
-        )}
-
-        <div className="flex shrink-0 items-center justify-between gap-3 py-3">
-          <span className="meta text-[var(--lime)]">recommended resources</span>
-          <span className="meta text-slate">{resources.length} links</span>
-        </div>
-
-        <AnimatePresence mode="popLayout">
-          {resources.length === 0 ? (
-            <motion.p
-              key="empty"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="meta py-10 text-center text-slate"
-            >
-              resources will be added when this stream becomes active.
-            </motion.p>
-          ) : (
-            <ul className="flex flex-col">
-              {resources.map((item, i) => (
-                <motion.li
-                  key={item.id}
-                  layout
-                  initial={reduce ? false : { opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.4, ease: E, delay: reduce ? 0 : i * 0.04 }}
-                  className="group border-b border-[var(--hairline-soft)] py-3.5 last:border-0"
-                >
-                  <div className="flex items-baseline gap-3">
-                    {/* 类型标记 */}
+          <div className="flex flex-col gap-3">
+            {roadmap.map((step) => (
+              <div key={`${stream.id}-${step.phase}`} className="border-l border-[var(--hairline)] pl-3">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="font-display text-base font-semibold leading-tight text-ink">
+                    {step.phase}
+                  </span>
+                  <span className="meta text-slate">{step.horizon}</span>
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-ink-soft">{step.focus}</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {step.deliverables.map((deliverable) => (
                     <span
-                      className="meta w-16 shrink-0"
-                      style={{ color: "var(--violet)" }}
+                      key={deliverable}
+                      className="rounded border border-[var(--hairline)] bg-white/35 px-2 py-1 text-[0.68rem] leading-tight text-slate"
                     >
-                      {item.resourceKind ? RESOURCE_KIND_LABEL[item.resourceKind] : "LINK"}
+                      {deliverable}
                     </span>
-                    {/* 日期 */}
-                    <span className="meta w-16 shrink-0 tabular-nums text-slate">{item.date}</span>
-                    {/* 标题 */}
-                    <span className="flex-1">
-                      <a
-                        href={item.href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-display text-base leading-tight text-ink transition-colors group-hover:text-[var(--lime)]"
-                      >
-                        {item.title}
-                      </a>
-                      {item.detail && (
-                        <span className="mt-0.5 block text-xs leading-relaxed text-slate">
-                          {item.detail}
-                        </span>
-                      )}
-                    </span>
-                    <span className="meta shrink-0 text-slate transition-colors group-hover:text-ink">↗</span>
-                  </div>
-                </motion.li>
-              ))}
-            </ul>
-          )}
-        </AnimatePresence>
+                  ))}
+                </div>
+                <p className="mt-2 text-[0.7rem] leading-relaxed text-[var(--violet)]">
+                  面试信号：{step.interviewSignal}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex shrink-0 items-center justify-between gap-3 py-3">
+        <span className="meta text-[var(--lime)]">recommended resources</span>
+        <span className="meta text-slate">{resources.length} links</span>
       </div>
+
+      <AnimatePresence mode="popLayout">
+        {resources.length === 0 ? (
+          <motion.p
+            key="empty"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="meta py-6 text-center text-slate"
+          >
+            resources will be added when this stream becomes active.
+          </motion.p>
+        ) : (
+          <ul className="flex flex-col">
+            {resources.map((item, i) => (
+              <motion.li
+                key={item.id}
+                layout
+                initial={reduce ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4, ease: E, delay: reduce ? 0 : i * 0.04 }}
+                className="group border-b border-[var(--hairline-soft)] py-3.5 last:border-0"
+              >
+                <div className="flex items-baseline gap-3">
+                  {/* 类型标记 */}
+                  <span
+                    className="meta w-16 shrink-0"
+                    style={{ color: "var(--violet)" }}
+                  >
+                    {item.resourceKind ? RESOURCE_KIND_LABEL[item.resourceKind] : "LINK"}
+                  </span>
+                  {/* 日期 */}
+                  <span className="meta w-16 shrink-0 tabular-nums text-slate">{item.date}</span>
+                  {/* 标题 */}
+                  <span className="flex-1">
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-display text-base leading-tight text-ink transition-colors group-hover:text-[var(--lime)]"
+                    >
+                      {item.title}
+                    </a>
+                    {item.detail && (
+                      <span className="mt-0.5 block text-xs leading-relaxed text-slate">
+                        {item.detail}
+                      </span>
+                    )}
+                  </span>
+                  <span className="meta shrink-0 text-slate transition-colors group-hover:text-ink">↗</span>
+                </div>
+              </motion.li>
+            ))}
+          </ul>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

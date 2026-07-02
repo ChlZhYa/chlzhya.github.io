@@ -5,12 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { SectionHead } from "@/components/shared/SectionHead";
 import { Reveal } from "@/components/shared/MotionPrimitives";
 import { LivingIndex } from "./LivingIndex";
-import { StreamFeed } from "./StreamFeed";
 import { getFeed, streamMap, streamRoadmaps, streams, supportWeeklyPlan } from "@/content/learning";
 
 /**
- * Workbench — Agent Harness 双项目学习地图。
- * 左：LivingIndex（9 分支俯瞰） / 右：选中路线的行动路线与关联内容时间线（内部滚动）。
+ * Workbench — Agent Harness 双项目学习地图（单栏叙事流）。
+ * sprint map 选中 stream 后就地展开详情，22 周计划紧跟其后，无左右分栏割裂。
  */
 export function WorkbenchView() {
   const searchParams = useSearchParams();
@@ -25,35 +24,34 @@ export function WorkbenchView() {
   );
 
   return (
-    <div className="relative mx-auto min-h-[calc(100dvh-88px)] max-w-[1400px] px-6 pb-16 pt-6 sm:px-10 sm:pt-8">
+    <div className="relative mx-auto min-h-[calc(100dvh-88px)] max-w-[1100px] px-6 pb-16 pt-6 sm:px-10 sm:pt-8">
       <SectionHead
         kicker="01 · workbench"
         title={<>agent <em className="not-italic text-[var(--lime)]">harness</em></>}
-        intro="22-week dual-project execution map: Research Agent (retrieval/synthesis/citation) + Coding Agent (code edit/test/approval), sharing one runtime/trace/eval harness across 9 capability streams."
+        intro="22-week dual-project execution map: Research Agent (retrieval/synthesis/citation) + Coding Agent (code edit/test/approval), sharing one runtime/trace/eval harness across 10 capability streams."
       />
 
-      {/* 主交互区：索引 + 关联时间线 */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
-        <Reveal delay={0.2} className="order-2 lg:order-1">
-          <div className="relative min-h-[680px] overflow-hidden rounded-2xl border border-[var(--hairline)] bg-[var(--paper)]/60 p-4">
-            <div className="meta absolute left-4 top-4 z-10 flex items-center gap-2">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--lime)]" />
-              current sprint map · tap a branch
-            </div>
-            <LivingIndex streams={streams} selectedId={selectedId} />
+      {/* 单栏：sprint map（含就地展开详情） */}
+      <Reveal delay={0.2} className="mt-6">
+        <div className="relative overflow-hidden rounded-2xl border border-[var(--hairline)] bg-[var(--paper)]/60 p-4">
+          <div className="meta mb-4 flex items-center gap-2">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--lime)]" />
+            current sprint map · tap a branch to expand
           </div>
-        </Reveal>
+          <LivingIndex
+            streams={streams}
+            selectedId={selectedId}
+            selectedStream={selected}
+            feed={items}
+            roadmap={roadmap}
+            weeks={linkedWeeks}
+          />
+        </div>
+      </Reveal>
 
-        <Reveal delay={0.3} className="order-1 lg:order-2">
-          {/* 固定高度容器：与左侧 SVG 区块等高，内部滚动 */}
-          <div className="h-[680px] rounded-2xl border border-[var(--hairline)] bg-[var(--paper)]/60 p-6">
-            <StreamFeed stream={selected} items={items} roadmap={roadmap} weeks={linkedWeeks} />
-          </div>
-        </Reveal>
-      </div>
-
-      <Reveal delay={0.4}>
-        <section className="mt-10 border-t border-[var(--hairline)] pt-8">
+      {/* 22 周计划：紧跟 sprint map，形成连续叙事 */}
+      <Reveal delay={0.3}>
+        <section className="mt-8 border-t border-[var(--hairline)] pt-8">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
               <span className="meta text-[var(--lime)]">22-week plan</span>
