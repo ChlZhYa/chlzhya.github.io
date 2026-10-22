@@ -43,6 +43,10 @@ textarea {
 button {
   cursor: pointer;
 }
+button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
 a {
   color: inherit;
   text-decoration: none;

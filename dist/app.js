@@ -743,7 +743,7 @@ function storeWriterSession() {
 }
 
 function persistDraft() {
-  if (!writerSession) return;
+  if (!writerSession || saving) return;
   writerSession.draft = readDraft();
   writerSession.touched = true;
   storeWriterSession();
@@ -761,6 +761,7 @@ function showWriter(message = "") {
 }
 
 function openWriter() {
+  if (saving) return;
   if (!writerSession && draftIssue !== "corrupt") {
     writerSession = { mode: "create", touched: false, draft: {
       kind: route().name === "essays" ? "essay" : "log",
@@ -780,6 +781,7 @@ function openWriter() {
 }
 
 function openEdit(entry) {
+  if (saving) return;
   if (writerSession?.mode === "create" && !writerSession.touched)
     writerSession = null;
   if (writerSession || draftIssue === "corrupt") {
@@ -843,17 +845,20 @@ async function saveEntry(event, asNew = false) {
     return;
   }
   let result;
-  const submit = form.querySelector(".save-entry");
+  const submitted = structuredClone(writerSession);
+  const draft = readDraft();
+  const controls = [...writeDialog.querySelectorAll("button, input, select, textarea")];
+  const disabledBeforeSave = controls.map((control) => control.disabled);
   saving = true;
-  submit.disabled = true;
-  saveAsNewButton.disabled = true;
+  controls.forEach((control) => { control.disabled = true; });
+  writeDialog.setAttribute("aria-busy", "true");
+  formMessage.textContent = "正在保存，请稍候…";
   try {
     await navigator.locks.request(writeLock, () => {
       const latest = parseSnapshot(localStorage.getItem(storageKey));
-      const draft = readDraft();
       const timestamp = new Date().toISOString();
-      result = writerSession.mode === "edit" && !asNew
-        ? updateEntry(latest, draft, writerSession.id, writerSession.baseline, timestamp)
+      result = submitted.mode === "edit" && !asNew
+        ? updateEntry(latest, draft, submitted.id, submitted.baseline, timestamp)
         : createEntry(latest, draft, `local-${crypto.randomUUID()}`, timestamp);
       localStorage.setItem(storageKey, JSON.stringify(result.snapshot));
     });
@@ -862,8 +867,8 @@ async function saveEntry(event, asNew = false) {
     return;
   } finally {
     saving = false;
-    submit.disabled = false;
-    saveAsNewButton.disabled = false;
+    controls.forEach((control, index) => { control.disabled = disabledBeforeSave[index]; });
+    writeDialog.removeAttribute("aria-busy");
   }
   storageError = "";
   userEntries = result.snapshot.entries;
@@ -945,22 +950,22 @@ document
   .querySelector(".cancel-write")
   .addEventListener("click", () => writeDialog.close());
 discardDraftButton.addEventListener("click", () => {
-  if (draftIssue !== "unavailable") {
-    try {
-      sessionStorage.removeItem(draftKey);
-    } catch {
-      formMessage.textContent = "无法舍弃草稿。请先检查浏览器的站点存储权限。";
-      return;
-    }
+  if (saving) return;
+  try {
+    sessionStorage.removeItem(draftKey);
+  } catch {
+    formMessage.textContent = "无法舍弃草稿，原内容仍保留。请先检查浏览器的站点存储权限。";
+    return;
   }
   writerSession = null;
-  if (draftIssue !== "unavailable") {
-    draftProblem = "";
-    draftIssue = "";
-  }
+  draftProblem = "";
+  draftIssue = "";
   form.reset();
   writeDialog.close();
   announce("已舍弃此标签页的草稿。");
+});
+writeDialog.addEventListener("cancel", (event) => {
+  if (saving) event.preventDefault();
 });
 saveAsNewButton.addEventListener("click", (event) => saveEntry(event, true));
 document
