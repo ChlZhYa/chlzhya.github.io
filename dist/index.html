@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f7f2" />
+    <meta
+      name="description"
+      content="Flow 浮流：记录每天积累的知识，与偶尔停下来想的事情。"
+    />
+    <title>学习流水 · Flow 浮流</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f7f7f2'/%3E%3Cellipse cx='32' cy='32' rx='27' ry='10' transform='rotate(-26 32 32)' fill='none' stroke='%235f7054' stroke-width='2'/%3E%3Cellipse cx='32' cy='32' rx='20' ry='9' transform='rotate(-51 32 32)' fill='none' stroke='%235f7054' stroke-width='1.5'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#app">跳转到正文</a>
+    <div class="site-shell">
+      <header class="site-header">
+        <a class="brand" href="#/journal" aria-label="Flow 浮流，返回学习流水">
+          <svg
+            class="brand-mark"
+            viewBox="0 0 60 44"
+            fill="none"
+            aria-hidden="true"
+          >
+            <ellipse
+              cx="30"
+              cy="22"
+              rx="27"
+              ry="8"
+              transform="rotate(-26 30 22)"
+              stroke="currentColor"
+              stroke-width="1.15"
+            />
+            <ellipse
+              cx="30"
+              cy="22"
+              rx="21"
+              ry="8"
+              transform="rotate(-51 30 22)"
+              stroke="currentColor"
+              stroke-width=".9"
+            />
+          </svg>
+          <span>Flow <span lang="zh-CN">浮流</span></span>
+        </a>
+        <nav class="main-nav" aria-label="主导航">
+          <a href="#/journal" data-nav="journal">学习流水</a>
+          <a href="#/essays" data-nav="essays">感悟文章</a>
+          <a href="#/about" data-nav="about">关于</a>
+        </nav>
+        <button
+          class="icon-button search-trigger"
+          type="button"
+          aria-label="搜索记录"
+          title="搜索记录"
+        >
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle
+              cx="10.7"
+              cy="10.7"
+              r="6.4"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <path
+              d="m15.6 15.6 5 5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+      </header>
+
+      <main id="app" tabindex="-1"></main>
+      <p
+        id="site-status"
+        class="site-status"
+        role="status"
+        aria-live="polite"
+      ></p>
+
+      <footer class="site-footer">
+        <span>保持好奇，缓慢生长。</span>
+        <span class="footer-right"
+          ><button class="text-button export-trigger" type="button">
+            导出我的记录</button
+          ><span>Flow © 2026</span></span
+        >
+      </footer>
+    </div>
+
+    <dialog
+      id="search-dialog"
+      class="modal search-modal"
+      aria-labelledby="search-title"
+    >
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">FIND A MOMENT</p>
+          <h2 id="search-title">寻找一段记录</h2>
+        </div>
+        <button
+          class="icon-button dialog-close"
+          type="button"
+          aria-label="关闭搜索"
+        >
+          ×
+        </button>
+      </div>
+      <label class="search-field"
+        ><span class="sr-only">搜索标题与正文</span
+        ><svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle
+            cx="10.7"
+            cy="10.7"
+            r="6.4"
+            stroke="currentColor"
+            stroke-width="1.5"
+          />
+          <path
+            d="m15.6 15.6 5 5"
+            stroke="currentColor"
+            stroke-width="1.5"
+          /></svg
+        ><input
+          id="search-input"
+          type="search"
+          placeholder="搜索标题、正文、分类或标签…"
+          autocomplete="off"
+      /></label>
+      <p class="search-hint">包含示例内容和当前浏览器保存的记录。</p>
+      <div id="search-results" class="search-results" aria-live="polite"></div>
+    </dialog>
+
+    <dialog
+      id="write-dialog"
+      class="modal write-modal"
+      aria-labelledby="write-title"
+    >
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">A NOTE TO KEEP</p>
+          <h2 id="write-title">写下这一刻</h2>
+        </div>
+        <button
+          class="icon-button dialog-close"
+          type="button"
+          aria-label="关闭写作窗口"
+        >
+          ×
+        </button>
+      </div>
+      <form id="entry-form" novalidate>
+        <div class="form-pair">
+          <label
+            >记录类型<select name="kind" required>
+              <option value="log">学习流水</option>
+              <option value="essay">感悟文章</option>
+            </select></label
+          >
+          <label>日期<input name="date" type="date" required /></label>
+        </div>
+        <label
+          >标题<input
+            name="title"
+            type="text"
+            maxlength="100"
+            placeholder="给这段记录起个名字"
+            required
+        /></label>
+        <div class="form-pair">
+          <label
+            >分类<select name="category" required>
+              <option value="AI / Agent">AI / Agent</option>
+              <option value="开发">开发</option>
+              <option value="阅读">阅读</option>
+              <option value="生活">生活</option>
+              <option value="其他">其他</option>
+            </select></label
+          >
+          <label
+            >标签 <span class="optional">选填，用逗号分隔</span
+            ><input
+              name="tags"
+              type="text"
+              maxlength="120"
+              placeholder="例如：RAG，笔记"
+          /></label>
+        </div>
+        <label
+          >正文<textarea
+            name="body"
+            rows="9"
+            maxlength="30000"
+            placeholder="从今天记住的一件事开始…"
+            required
+          ></textarea>
+        </label>
+        <p id="form-message" class="form-message" role="alert"></p>
+        <div class="form-actions">
+          <button class="text-button cancel-write" type="button">取消</button
+          ><button class="solid-button" type="submit">
+            保存到此浏览器 <span aria-hidden="true">↗</span>
+          </button>
+        </div>
+      </form>
+      <p class="storage-note">
+        记录只保存在当前浏览器。清除站点数据或更换设备会失去记录，请定期导出备份。
+      </p>
+    </dialog>
+  </body>
+</html>
