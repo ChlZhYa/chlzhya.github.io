@@ -1,0 +1,47 @@
+[
+  {
+    "cardsOverlap": false,
+    "dayDiameter": 23.99839782714844,
+    "introRingOverlap": false,
+    "minimumRoundDayGap": 0.31341081929039305,
+    "page": 305,
+    "previews": 5,
+    "viewport": 320
+  },
+  {
+    "cardsOverlap": false,
+    "dayDiameter": 23.99839782714844,
+    "introRingOverlap": false,
+    "minimumRoundDayGap": 4.486423030173622,
+    "page": 375,
+    "previews": 5,
+    "viewport": 390
+  },
+  {
+    "cardsOverlap": false,
+    "dayDiameter": 27.998130798339844,
+    "introRingOverlap": false,
+    "minimumRoundDayGap": 0.486703400937305,
+    "page": 753,
+    "previews": 5,
+    "viewport": 768
+  },
+  {
+    "cardsOverlap": false,
+    "dayDiameter": 27.998130798339844,
+    "introRingOverlap": false,
+    "minimumRoundDayGap": 0.4866767170290558,
+    "page": 1085,
+    "previews": 5,
+    "viewport": 1100
+  },
+  {
+    "cardsOverlap": false,
+    "dayDiameter": 27.998130798339844,
+    "introRingOverlap": false,
+    "minimumRoundDayGap": 0.4866767170290558,
+    "page": 1420,
+    "previews": 5,
+    "viewport": 1435
+  }
+]
