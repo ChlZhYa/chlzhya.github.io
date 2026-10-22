@@ -285,7 +285,6 @@ function thoughtCard(entry, index) {
         : []),
     ]),
     node("h2", {}, [node("a", { href: entryHref(entry), text: entry.title })]),
-    node("p", { text: excerpt(entry) }),
     node("span", {
       class: "category-pill " + categoryGroup(entry.category),
       text: categoryGroup(entry.category),
@@ -316,7 +315,6 @@ function articleBand(entries) {
     [
       node("div", { class: "article-band-head" }, [
         node("div", {}, [
-          node("p", { class: "eyebrow", text: "LONGER THOUGHTS" }),
           node("h2", { id: "article-band-title", text: "文章" }),
         ]),
         node("a", {
@@ -365,6 +363,11 @@ function journal() {
       node("p", { text: "小想法、偶然发现，还有那些突然想通的瞬间。" }),
     ]),
     ringCalendar(selected.activity),
+    node("p", {
+      class: "canvas-scribble",
+      "aria-hidden": "true",
+      text: "Some little thoughts,\nmake a brighter day.",
+    }),
   );
   const controls = node("div", { class: "flow-controls" });
   const filters = node("div", {
@@ -449,7 +452,7 @@ function journal() {
       emptyState(
         "这里还没有留下念头",
         flowState.selectedDate
-          ? "这一天还没有 Flow。可以选择别的日期，或查看整个月。"
+          ? `这一天在「${flowState.category}」分类下还没有 Flow。可以换个分类或查看全部日期。`
           : "当前范围没有 Flow，试试其他月份或全部日期。",
         "查看全部日期",
         () => {
@@ -460,13 +463,13 @@ function journal() {
         },
       ),
     );
-  scene.append(stage);
-  root.append(scene, controls);
+  scene.append(controls, stage);
+  root.append(scene);
   if (selected.remaining.length) {
     const more = node(
       "section",
       { class: "more-thoughts", "aria-label": "更多 Flow" },
-      [node("p", { class: "eyebrow", text: "MORE MOMENTS" })],
+      [],
     );
     const list = node("div", { class: "flow-list" });
     for (const entry of selected.remaining) list.append(flowRow(entry));
@@ -579,8 +582,12 @@ function reader(entry) {
     ]),
   );
   const body = node("div", { class: "prose" });
-  for (const paragraph of entry.body.trim().split(/\n\s*\n/))
-    body.append(node("p", { text: paragraph }));
+  let text = entry.body.trim();
+  if (entry.kind === "log" && text.split(/\r?\n/)[0] === entry.title)
+    text = text.slice(entry.title.length).trim();
+  if (text)
+    for (const paragraph of text.split(/\n\s*\n/))
+      body.append(node("p", { text: paragraph }));
   article.append(body);
   article.append(
     node("div", { class: "reader-footer" }, [
