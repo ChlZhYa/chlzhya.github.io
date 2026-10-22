@@ -53,6 +53,13 @@
 * {
   box-sizing: border-box;
 }
+.entry-title,
+.essay-index-row h2,
+.article-header h1,
+.search-result strong,
+.essay-preview strong {
+  overflow-wrap: anywhere;
+}
 html {
   scroll-behavior: smooth;
 }

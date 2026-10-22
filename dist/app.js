@@ -339,6 +339,7 @@ function journal() {
     button.addEventListener("click", () => {
       filter = category;
       render();
+      app.querySelector('.filter-button[aria-pressed="true"]').focus();
     });
     filters.append(button);
   }
@@ -723,6 +724,11 @@ document.querySelector(".search-trigger").addEventListener("click", () => {
   searchDialog.showModal();
   searchInput.focus();
   search();
+});
+document.querySelector(".skip-link").addEventListener("click", (event) => {
+  event.preventDefault();
+  app.focus();
+  app.scrollIntoView({ behavior: "instant", block: "start" });
 });
 document
   .querySelectorAll(".dialog-close")
