@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
+    "smoke": "node scripts/smoke.mjs",
     "check": "node --check server.mjs && node --check dist/app.js && node --check dist/data.js"
   }
 }
