@@ -1,5 +1,7 @@
 # Flow second direction
 
+Latest selection: the user corrected an accidental choice and selected concept B, the spatial thought canvas with circular calendar. Read design/v2/spec.md as the active visual contract. Concept A is superseded.
+
 The user rejected the current palette and traditional blog timeline plus sidebar. They want an original, lively, minimal and tactile personal website. Short content is broader than study logs: small ideas, observations and aha moments. Call this section Flow. Long reflective articles remain distinct. The calendar is appreciated but should look novel and modern. User selected cool white and blue-violet, clear and contemporary with a little playful energy.
 
 Current site is buildless vanilla JS. dist/app.js owns a discriminated Entry registry, render functions, hash routes, storage, search, authoring, and export. dist/data.js has three demo logs and two essays. dist/styles.css owns the old paper/green/serif style. dist/index.html contains shell and dialogs. Store key flow-journal-v1, version1, Entry {id,kind:'log'|'essay',title,date,category,tags,body,updatedAt}. Keep old records readable without destructive migration. Short kind can remain log internally for storage compatibility while all user-visible references become Flow. Existing #/journal links should still resolve if canonical route becomes #/flow. Existing read/search/save/export and skip/focus repairs must survive.
