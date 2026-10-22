@@ -3,15 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f7f7f2" />
+    <meta name="theme-color" content="#f6f7fb" />
     <meta
       name="description"
-      content="Flow 浮流：记录每天积累的知识，与偶尔停下来想的事情。"
+      content="Flow 浮流：留下小想法、偶然发现和突然想通的瞬间。"
     />
-    <title>学习流水 · Flow 浮流</title>
+    <title>Flow · 浮流</title>
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f7f7f2'/%3E%3Cellipse cx='32' cy='32' rx='27' ry='10' transform='rotate(-26 32 32)' fill='none' stroke='%235f7054' stroke-width='2'/%3E%3Cellipse cx='32' cy='32' rx='20' ry='9' transform='rotate(-51 32 32)' fill='none' stroke='%235f7054' stroke-width='1.5'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6f7fb'/%3E%3Ctext x='7' y='44' font-family='Arial' font-size='34' font-weight='bold' fill='%236554e8'%3Efl%3C/text%3E%3C/svg%3E"
     />
     <link rel="stylesheet" href="/styles.css" />
     <script type="module" src="/app.js"></script>
@@ -20,39 +20,17 @@
     <a class="skip-link" href="#app">跳转到正文</a>
     <div class="site-shell">
       <header class="site-header">
-        <a class="brand" href="#/journal" aria-label="Flow 浮流，返回学习流水">
-          <svg
-            class="brand-mark"
-            viewBox="0 0 60 44"
-            fill="none"
-            aria-hidden="true"
-          >
-            <ellipse
-              cx="30"
-              cy="22"
-              rx="27"
-              ry="8"
-              transform="rotate(-26 30 22)"
-              stroke="currentColor"
-              stroke-width="1.15"
-            />
-            <ellipse
-              cx="30"
-              cy="22"
-              rx="21"
-              ry="8"
-              transform="rotate(-51 30 22)"
-              stroke="currentColor"
-              stroke-width=".9"
-            />
-          </svg>
-          <span>Flow <span lang="zh-CN">浮流</span></span>
-        </a>
+        <a class="brand" href="#/flow" aria-label="Flow 浮流，返回 Flow"
+          >flow</a
+        >
         <nav class="main-nav" aria-label="主导航">
-          <a href="#/journal" data-nav="journal">学习流水</a>
-          <a href="#/essays" data-nav="essays">感悟文章</a>
+          <a href="#/flow" data-nav="journal">Flow</a>
+          <a href="#/essays" data-nav="essays">文章</a>
           <a href="#/about" data-nav="about">关于</a>
         </nav>
+        <button class="header-write write-trigger" type="button">
+          记一笔 <span aria-hidden="true">＋</span>
+        </button>
         <button
           class="icon-button search-trigger"
           type="button"
@@ -86,7 +64,7 @@
       ></p>
 
       <footer class="site-footer">
-        <span>保持好奇，缓慢生长。</span>
+        <span><strong>flow</strong>　 念头流过，就留在这里。</span>
         <span class="footer-right"
           ><button class="text-button export-trigger" type="button">
             导出我的记录</button
@@ -157,29 +135,40 @@
         </button>
       </div>
       <form id="entry-form" novalidate>
-        <div class="form-pair">
+        <label class="body-label"
+          >正文<textarea
+            name="body"
+            rows="9"
+            maxlength="30000"
+            placeholder="此刻在想什么？"
+            required
+          ></textarea>
+        </label>
+        <label class="title-label"
+          >标题 <span class="optional">选填</span
+          ><input
+            name="title"
+            type="text"
+            maxlength="100"
+            placeholder="选填，留空将用正文第一行"
+        /></label>
+        <div class="form-pair entry-meta">
           <label
             >记录类型<select name="kind" required>
-              <option value="log">学习流水</option>
-              <option value="essay">感悟文章</option>
+              <option value="log">Flow</option>
+              <option value="essay">文章</option>
             </select></label
           >
           <label>日期<input name="date" type="date" required /></label>
         </div>
-        <label
-          >标题<input
-            name="title"
-            type="text"
-            maxlength="100"
-            placeholder="给这段记录起个名字"
-            required
-        /></label>
-        <div class="form-pair">
+        <div class="form-pair entry-details">
           <label
             >分类<select name="category" required>
               <option value="AI / Agent">AI / Agent</option>
               <option value="开发">开发</option>
               <option value="阅读">阅读</option>
+              <option value="灵感" selected>灵感</option>
+              <option value="学习">学习</option>
               <option value="生活">生活</option>
               <option value="其他">其他</option>
             </select></label
@@ -193,15 +182,6 @@
               placeholder="例如：RAG，笔记"
           /></label>
         </div>
-        <label
-          >正文<textarea
-            name="body"
-            rows="9"
-            maxlength="30000"
-            placeholder="从今天记住的一件事开始…"
-            required
-          ></textarea>
-        </label>
         <p id="form-message" class="form-message" role="alert"></p>
         <div class="form-actions">
           <button class="text-button cancel-write" type="button">取消</button

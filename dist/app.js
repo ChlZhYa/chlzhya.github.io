@@ -1,4 +1,12 @@
-import { seedEntries, categories } from "./data.js";
+import { seedEntries } from "./data.js";
+import {
+  categoryGroup,
+  flowCategories,
+  monthDays,
+  selectFlow,
+  shiftMonth,
+  titleFromBody,
+} from "./flow-model.js";
 
 const storageKey = "flow-journal-v1";
 const allowedKinds = new Set(["log", "essay"]);
@@ -8,6 +16,8 @@ const allowedCategories = new Set([
   "阅读",
   "生活",
   "其他",
+  "灵感",
+  "学习",
 ]);
 const app = document.querySelector("#app");
 const status = document.querySelector("#site-status");
@@ -17,15 +27,23 @@ const searchInput = document.querySelector("#search-input");
 const searchResults = document.querySelector("#search-results");
 const form = document.querySelector("#entry-form");
 const formMessage = document.querySelector("#form-message");
-let filter = "全部";
+const flowState = {
+  month: currentLocalDate().slice(0, 7),
+  selectedDate: null,
+  category: "全部",
+  visibleCount: 24,
+  allTime: false,
+};
 let userEntries = [];
 let storageError = "";
 let statusTimer;
 
 function node(tag, attributes = {}, children = []) {
-  const element = document.createElement(tag);
+  const element = ["svg", "path", "circle"].includes(tag)
+    ? document.createElementNS("http://www.w3.org/2000/svg", tag)
+    : document.createElement(tag);
   for (const [name, value] of Object.entries(attributes)) {
-    if (name === "class") element.className = value;
+    if (name === "class") element.setAttribute("class", value);
     else if (name === "text") element.textContent = value;
     else if (name === "dataset") Object.assign(element.dataset, value);
     else element.setAttribute(name, value);
@@ -157,50 +175,6 @@ function tagsFor(entry) {
   return list;
 }
 
-function hero() {
-  return node("section", { class: "hero" }, [
-    node("div", { class: "hero-copy" }, [
-      node("h1", {}, [
-        document.createTextNode("在学习中生长，"),
-        node("span", { text: "在记录中看见自己。" }),
-      ]),
-      node("p", { text: "一些每天积累的知识，和偶尔停下来想的事情。" }),
-    ]),
-    node("div", { class: "hero-art", "aria-hidden": "true" }, [
-      node("img", { src: "/assets/flow-ribbon.png", alt: "" }),
-      node("span", { class: "hero-script", text: "a little,\nevery day." }),
-    ]),
-  ]);
-}
-
-function timelineRow(entry) {
-  const date = node("div", { class: "timeline-date" }, [
-    node("span", { class: "day-number", text: entry.date.slice(8) }),
-    node("span", {
-      class: "month-year",
-      text: `${new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" }).format(new Date(`${entry.date}T12:00:00Z`)).toUpperCase()} ${entry.date.slice(0, 4)}`,
-    }),
-    node("span", { class: "weekday", text: weekday(entry.date) }),
-  ]);
-  return node("article", { class: "timeline-row" }, [
-    date,
-    node("div", { class: "timeline-track", "aria-hidden": "true" }),
-    node("div", { class: "timeline-content" }, [
-      node("h3", { class: "entry-title" }, [
-        node("a", { href: entryHref(entry), text: entry.title }),
-      ]),
-      tagsFor(entry),
-      node("p", { class: "excerpt", text: excerpt(entry) }),
-      node("a", {
-        class: "read-link",
-        href: entryHref(entry),
-        text: "继续阅读 ↗",
-        "aria-label": `继续阅读：${entry.title}`,
-      }),
-    ]),
-  ]);
-}
-
 function emptyState(title, detail, actionText, action) {
   const section = node("div", { class: "empty-state" }, [
     node("strong", { text: title }),
@@ -218,164 +192,306 @@ function emptyState(title, detail, actionText, action) {
   return section;
 }
 
-function calendar(entries) {
-  const today = currentLocalDate();
-  const [year, month] = today.split("-").map(Number);
-  const firstDay = new Date(Date.UTC(year, month - 1, 1));
-  const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const offset = (firstDay.getUTCDay() + 6) % 7;
-  const logDates = new Map();
-  for (const entry of entries.filter(
-    (item) => item.kind === "log" && item.date.startsWith(today.slice(0, 7)),
-  )) {
-    if (!logDates.has(entry.date)) logDates.set(entry.date, []);
-    logDates.get(entry.date).push(entry);
-  }
-  const section = node("section", { class: "sidebar-calendar" });
-  section.append(
-    node("h3", {
-      text: `${new Intl.DateTimeFormat("zh-CN", { month: "long" }).format(firstDay)}，留下了一些足迹`,
-    }),
-  );
-  const grid = node("div", {
-    class: "calendar calendar-grid",
-    "aria-label": `${year}年${month}月学习记录日历`,
-  });
-  for (const label of ["周一", "周二", "周三", "周四", "周五", "周六", "周日"])
-    grid.append(node("span", { class: "calendar-head", text: label }));
-  for (let i = 0; i < offset; i++)
-    grid.append(
-      node("span", { class: "calendar-day empty", "aria-hidden": "true" }),
-    );
-  for (let day = 1; day <= days; day++) {
-    const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const active = logDates.get(date) ?? [];
-    const cell = node("span", {
-      class: `calendar-day${active.length ? " has-entry" : ""}${active.length > 1 ? " intense" : ""}${date === today ? " today" : ""}`,
-    });
-    if (active.length)
-      cell.append(
-        node("a", {
-          href: entryHref(active[0]),
-          text: String(day),
-          "aria-label": `${date}，${active.length}条学习记录，查看${active[0].title}`,
-        }),
-      );
-    else cell.textContent = String(day);
-    grid.append(cell);
-  }
-  section.append(grid);
-  return section;
+function updateFlow(focusSelector, message) {
+  render();
+  if (focusSelector)
+    app.querySelector(focusSelector)?.focus({ preventScroll: true });
+  if (message) announce(message);
 }
 
-function sidebar(entries) {
-  const aside = node("aside", {
-    class: "sidebar",
-    "aria-label": "日历与感悟文章",
+function ringCalendar(activity) {
+  const [year, month] = flowState.month.split("-").map(Number);
+  const ring = node("section", {
+    class: "ring-calendar",
+    "aria-label": year + "年" + month + "月 Flow 日历",
   });
-  aside.append(calendar(entries));
-  const preview = node("section", { class: "sidebar-essays" }, [
-    node("h3", { text: "偶尔，写得长一点" }),
-    node("p", { text: "那些没有标准答案的想法。" }),
+  const days = monthDays(flowState.month);
+  for (let day = 1; day <= days; day++) {
+    const date = flowState.month + "-" + String(day).padStart(2, "0");
+    const count = activity.get(date) ?? 0;
+    const angle = ((day - 1) / days) * Math.PI * 2 - Math.PI / 2;
+    const button = node("button", {
+      class:
+        "ring-day" +
+        (count ? " active" : "") +
+        (date === currentLocalDate() ? " today" : "") +
+        (date === flowState.selectedDate ? " selected" : ""),
+      type: "button",
+      text: String(day),
+      "data-day": date,
+      "aria-label":
+        date +
+        "，" +
+        count +
+        "条 Flow" +
+        (date === currentLocalDate() ? "，今天" : ""),
+      "aria-pressed": String(date === flowState.selectedDate),
+      style:
+        "--x:" +
+        (50 + Math.cos(angle) * 44).toFixed(3) +
+        "%;--y:" +
+        (50 + Math.sin(angle) * 44).toFixed(3) +
+        "%",
+    });
+    button.addEventListener("click", () => {
+      flowState.selectedDate = flowState.selectedDate === date ? null : date;
+      flowState.allTime = false;
+      flowState.visibleCount = 24;
+      updateFlow(
+        '[data-day="' + date + '"]',
+        flowState.selectedDate ? "已筛选 " + date + "。" : "已显示整个月。",
+      );
+    });
+    ring.append(button);
+  }
+  const center = node("div", { class: "ring-center" }, [
+    node("span", { class: "ring-month", text: month + " 月" }),
+    node("span", { class: "ring-year", text: String(year) }),
   ]);
+  for (const [offset, label] of [
+    [-1, "上个月"],
+    [1, "下个月"],
+  ]) {
+    const button = node("button", {
+      class: "ring-arrow " + (offset < 0 ? "previous" : "next"),
+      type: "button",
+      text: offset < 0 ? "‹" : "›",
+      "aria-label": label,
+      "data-month-arrow": String(offset),
+    });
+    button.addEventListener("click", () => {
+      flowState.month = shiftMonth(flowState.month, offset);
+      flowState.selectedDate = null;
+      flowState.allTime = false;
+      flowState.visibleCount = 24;
+      updateFlow(
+        '[data-month-arrow="' + offset + '"]',
+        "已切换到 " + flowState.month + "。",
+      );
+    });
+    center.append(button);
+  }
+  ring.append(center);
+  return ring;
+}
+
+function thoughtCard(entry, index) {
+  return node("article", { class: "thought-card card-" + (index + 1) }, [
+    node("div", { class: "thought-meta" }, [
+      node("span", { class: "thought-dot", "aria-hidden": "true" }),
+      node("time", { datetime: entry.date, text: shortDate(entry.date) }),
+      ...(isDemo(entry)
+        ? [node("span", { class: "demo-mark", text: "示例" })]
+        : []),
+    ]),
+    node("h2", {}, [node("a", { href: entryHref(entry), text: entry.title })]),
+    node("p", { text: excerpt(entry) }),
+    node("span", {
+      class: "category-pill " + categoryGroup(entry.category),
+      text: categoryGroup(entry.category),
+    }),
+  ]);
+}
+
+function flowRow(entry) {
+  return node("article", { class: "flow-row" }, [
+    node("div", { class: "flow-row-meta" }, [
+      node("span", { class: "thought-dot", "aria-hidden": "true" }),
+      node("time", { datetime: entry.date, text: shortDate(entry.date) }),
+      ...(isDemo(entry) ? [node("span", { text: "示例" })] : []),
+    ]),
+    node("h3", {}, [node("a", { href: entryHref(entry), text: entry.title })]),
+    node("p", { text: excerpt(entry) }),
+    node("span", {
+      class: "category-pill " + categoryGroup(entry.category),
+      text: categoryGroup(entry.category),
+    }),
+  ]);
+}
+
+function articleBand(entries) {
+  const band = node(
+    "section",
+    { class: "article-band", "aria-labelledby": "article-band-title" },
+    [
+      node("div", { class: "article-band-head" }, [
+        node("div", {}, [
+          node("p", { class: "eyebrow", text: "LONGER THOUGHTS" }),
+          node("h2", { id: "article-band-title", text: "文章" }),
+        ]),
+        node("a", {
+          href: "#/essays",
+          class: "text-link",
+          text: "查看全部 ↗",
+        }),
+      ]),
+    ],
+  );
+  const list = node("div", { class: "article-band-list" });
   for (const entry of entries
     .filter((item) => item.kind === "essay")
     .slice(0, 2)) {
-    preview.append(
-      node("a", { class: "essay-preview", href: entryHref(entry) }, [
-        node("span", {}, [
-          node("strong", { text: entry.title }),
-          node("small", {
-            text: `${shortDate(entry.date)} · ${isDemo(entry) ? "示例文章" : entry.category}`,
-          }),
-        ]),
-        node("span", { text: "→", "aria-hidden": "true" }),
+    list.append(
+      node("a", { class: "article-preview", href: entryHref(entry) }, [
+        node("time", { datetime: entry.date, text: shortDate(entry.date) }),
+        node("strong", { text: entry.title }),
+        node("span", { text: excerpt(entry) }),
+        ...(isDemo(entry) ? [node("small", { text: "示例文章" })] : []),
       ]),
     );
   }
-  aside.append(preview);
-  return aside;
+  band.append(list);
+  return band;
 }
 
 function journal() {
-  document.title = "学习流水 · Flow 浮流";
-  const root = node("div", { class: "page-enter" }, [hero()]);
-  const grid = node("div", { class: "home-grid" });
-  const main = node("section", { "aria-labelledby": "journal-heading" });
-  const writeButton = node("button", {
-    class: "outline-button write-trigger",
-    type: "button",
-    text: "写一条 ↗",
+  document.title = "Flow · 浮流";
+  const entries = allEntries();
+  const selected = selectFlow(entries, flowState);
+  const root = node("div", { class: "flow-page page-enter" });
+  if (storageError) root.append(storageAlert());
+  const scene = node("section", {
+    class: "canvas-scene",
+    "aria-labelledby": "flow-title",
   });
-  main.append(
-    node("div", { class: "section-top" }, [
-      node("div", {}, [
-        node("h2", {
-          id: "journal-heading",
-          class: "section-title",
-          text: "学习流水",
-        }),
-        node("p", {
-          class: "section-subtitle",
-          text: "日复一日，慢慢有迹可循。",
-        }),
-      ]),
-      writeButton,
+  scene.append(
+    node("div", { class: "canvas-intro" }, [
+      node("div", {
+        class: "outline-flow",
+        text: "flow",
+        "aria-hidden": "true",
+      }),
+      node("h1", { id: "flow-title", text: "念头流过，就留在这里。" }),
+      node("p", { text: "小想法、偶然发现，还有那些突然想通的瞬间。" }),
     ]),
+    ringCalendar(selected.activity),
   );
-  if (storageError) main.append(storageAlert());
+  const controls = node("div", { class: "flow-controls" });
   const filters = node("div", {
     class: "filters",
     role: "group",
-    "aria-label": "按分类筛选学习记录",
+    "aria-label": "按分类筛选 Flow",
   });
-  for (const category of categories) {
+  for (const category of flowCategories) {
     const button = node("button", {
       class: "filter-button",
       type: "button",
       text: category,
-      "aria-pressed": String(filter === category),
+      "aria-pressed": String(flowState.category === category),
+      "data-category": category,
     });
     button.addEventListener("click", () => {
-      filter = category;
-      render();
-      app.querySelector('.filter-button[aria-pressed="true"]').focus();
+      flowState.category = category;
+      flowState.visibleCount = 24;
+      updateFlow(
+        '[data-category="' + category + '"]',
+        "已筛选" +
+          category +
+          "，共 " +
+          selectFlow(allEntries(), flowState).total +
+          " 条。",
+      );
     });
     filters.append(button);
   }
-  main.append(filters);
-  const entries = allEntries();
-  const visible = entries.filter(
-    (entry) =>
-      entry.kind === "log" &&
-      (filter === "全部" ||
-        entry.category === filter ||
-        entry.tags.includes(filter)),
+  controls.append(filters);
+  const scope = node("div", { class: "date-scope" }, [
+    node("span", {
+      text: flowState.allTime
+        ? "全部日期"
+        : flowState.selectedDate
+          ? shortDate(flowState.selectedDate)
+          : flowState.month.replace("-", " 年 ") + " 月",
+    }),
+  ]);
+  const scopeButton = node("button", {
+    class: "scope-button",
+    type: "button",
+    text: flowState.allTime ? "回到本月 ↗" : "全部日期 ↗",
+    "data-scope": "true",
+  });
+  scopeButton.addEventListener("click", () => {
+    flowState.allTime = !flowState.allTime;
+    flowState.selectedDate = null;
+    flowState.month = currentLocalDate().slice(0, 7);
+    flowState.visibleCount = 24;
+    updateFlow(
+      "[data-scope]",
+      flowState.allTime ? "已显示全部日期。" : "已回到本月。",
+    );
+  });
+  scope.append(scopeButton);
+  controls.append(scope);
+  const stage = node("div", { class: "thought-stage" });
+  stage.append(
+    node(
+      "svg",
+      {
+        class: "connector",
+        viewBox: "0 0 1200 410",
+        preserveAspectRatio: "none",
+        "aria-hidden": "true",
+        focusable: "false",
+      },
+      [
+        node("path", {
+          d: "M 94 120 C 155 290, 310 8, 495 177 S 830 369, 1050 165",
+        }),
+        node("circle", { cx: "495", cy: "177", r: "6" }),
+        node("circle", { cx: "1050", cy: "165", r: "6" }),
+      ],
+    ),
   );
-  const list = node("div", { class: "timeline" });
-  if (visible.length)
-    for (const entry of visible) list.append(timelineRow(entry));
-  else
-    list.append(
+  for (const [index, entry] of selected.featured.entries())
+    stage.append(thoughtCard(entry, index));
+  if (!selected.total)
+    stage.append(
       emptyState(
-        "这里暂时没有记录",
-        `“${filter}”分类中还没有学习流水。`,
-        "查看全部",
+        "这里还没有留下念头",
+        flowState.selectedDate
+          ? "这一天还没有 Flow。可以选择别的日期，或查看整个月。"
+          : "当前范围没有 Flow，试试其他月份或全部日期。",
+        "查看全部日期",
         () => {
-          filter = "全部";
-          render();
+          flowState.allTime = true;
+          flowState.selectedDate = null;
+          flowState.category = "全部";
+          updateFlow("[data-scope]", "已显示全部日期。");
         },
       ),
     );
-  main.append(list);
-  main.append(
+  scene.append(stage);
+  root.append(scene, controls);
+  if (selected.remaining.length) {
+    const more = node(
+      "section",
+      { class: "more-thoughts", "aria-label": "更多 Flow" },
+      [node("p", { class: "eyebrow", text: "MORE MOMENTS" })],
+    );
+    const list = node("div", { class: "flow-list" });
+    for (const entry of selected.remaining) list.append(flowRow(entry));
+    more.append(list);
+    root.append(more);
+  }
+  if (selected.hasMore) {
+    const button = node("button", {
+      class: "outline-button load-more",
+      type: "button",
+      text: "继续看更多 ↗",
+    });
+    button.addEventListener("click", () => {
+      flowState.visibleCount += 24;
+      updateFlow(".load-more", "已显示更多 Flow。");
+    });
+    root.append(button);
+  }
+  root.append(
     node("p", {
       class: "sample-note",
       text: "标有“示例”的内容仅用于展示。自己写的记录保存在当前浏览器中。",
     }),
+    articleBand(entries),
   );
-  grid.append(main, sidebar(entries));
-  root.append(grid);
   return root;
 }
 
@@ -441,8 +557,8 @@ function essays() {
 
 function reader(entry) {
   document.title = `${entry.title} · Flow 浮流`;
-  const kindName = entry.kind === "log" ? "学习流水" : "感悟文章";
-  const back = entry.kind === "log" ? "#/journal" : "#/essays";
+  const kindName = entry.kind === "log" ? "Flow" : "文章";
+  const back = entry.kind === "log" ? "#/flow" : "#/essays";
   const article = node("article", { class: "reader page-enter" });
   article.append(
     node("a", { class: "back-link", href: back, text: `← 返回${kindName}` }),
@@ -451,7 +567,7 @@ function reader(entry) {
     node("header", { class: "article-header" }, [
       node("p", {
         class: "eyebrow",
-        text: entry.kind === "log" ? "LEARNING JOURNAL" : "REFLECTIONS",
+        text: entry.kind === "log" ? "FLOW MOMENT" : "REFLECTIONS",
       }),
       node("h1", { text: entry.title }),
       node("div", { class: "article-meta" }, [
@@ -499,7 +615,7 @@ function about() {
       node("section", {}, [
         node("h2", { text: "两种记录的节奏" }),
         node("p", {
-          text: "“学习流水”收下每天弄懂的一件事；“感悟文章”留给需要更长篇幅的思考。页面中的示例仅展示这个空间可以如何使用，不代表真实个人经历。",
+          text: "“Flow”收下小想法、观察和突然想通的瞬间；“文章”留给需要更长篇幅的思考。页面中的示例仅展示这个空间可以如何使用，不代表真实个人经历。",
         }),
         writeButton,
       ]),
@@ -519,8 +635,8 @@ function about() {
 }
 
 function route() {
-  const hash = location.hash || "#/journal";
-  if (hash === "#/journal") return { name: "journal" };
+  const hash = location.hash || "#/flow";
+  if (hash === "#/flow" || hash === "#/journal") return { name: "journal" };
   if (hash === "#/essays") return { name: "essays" };
   if (hash === "#/about") return { name: "about" };
   if (hash.startsWith("#/entry/")) {
@@ -566,9 +682,9 @@ function notFound() {
     emptyState(
       "没有找到这段记录",
       "它可能不在当前浏览器里，或者链接已失效。",
-      "返回学习流水",
+      "返回 Flow",
       () => {
-        location.hash = "#/journal";
+        location.hash = "#/flow";
       },
     ),
   ]);
@@ -625,7 +741,7 @@ function search() {
     const link = node("a", { class: "search-result", href: entryHref(entry) }, [
       node("strong", { text: entry.title }),
       node("small", {
-        text: `${shortDate(entry.date)} · ${entry.kind === "log" ? "学习流水" : "感悟文章"}${isDemo(entry) ? " · 示例" : ""}`,
+        text: `${shortDate(entry.date)} · ${entry.kind === "log" ? "Flow" : "文章"}${isDemo(entry) ? " · 示例" : ""}`,
       }),
     ]);
     link.addEventListener("click", () => searchDialog.close());
@@ -640,9 +756,27 @@ function openWriter() {
   );
   if (!hasDraft)
     form.elements.kind.value = route().name === "essays" ? "essay" : "log";
+  syncWriter();
   if (!form.elements.date.value) form.elements.date.value = currentLocalDate();
   writeDialog.showModal();
-  form.elements.title.focus();
+  (form.elements.kind.value === "log"
+    ? form.elements.body
+    : form.elements.title
+  ).focus();
+}
+
+function syncWriter() {
+  const essay = form.elements.kind.value === "essay";
+  form.elements.title.required = essay;
+  form.elements.title.placeholder = essay
+    ? "文章标题"
+    : "选填，留空将用正文第一行";
+  document.querySelector("#write-title").textContent = essay
+    ? "写一篇文章"
+    : "记下一个念头";
+  form.querySelector(".title-label .optional").textContent = essay
+    ? "必填"
+    : "选填";
 }
 
 function saveEntry(event) {
@@ -660,7 +794,11 @@ function saveEntry(event) {
   const entry = {
     id: `local-${crypto.randomUUID()}`,
     kind: String(data.get("kind") ?? ""),
-    title: String(data.get("title") ?? "").trim(),
+    title:
+      String(data.get("title") ?? "").trim() ||
+      (data.get("kind") === "log"
+        ? titleFromBody(String(data.get("body") ?? ""))
+        : ""),
     date: String(data.get("date") ?? ""),
     category: String(data.get("category") ?? ""),
     tags: [...new Set(tags)],
@@ -669,7 +807,7 @@ function saveEntry(event) {
   };
   if (!validEntry(entry)) {
     formMessage.textContent =
-      "请检查标题、有效日期和正文。标签最多 8 个，每个不超过 24 字。";
+      "请检查正文、日期和标题。文章需要标题；标签最多 8 个，每个不超过 24 字。";
     return;
   }
   const latest = loadEntries();
@@ -690,6 +828,7 @@ function saveEntry(event) {
   }
   userEntries = next;
   form.reset();
+  syncWriter();
   writeDialog.close();
   announce("已保存到当前浏览器。建议定期导出备份。");
   location.hash = entryHref(entry);
@@ -725,6 +864,10 @@ document.querySelector(".search-trigger").addEventListener("click", () => {
   searchInput.focus();
   search();
 });
+document
+  .querySelector(".site-header .write-trigger")
+  .addEventListener("click", openWriter);
+form.elements.kind.addEventListener("change", syncWriter);
 document.querySelector(".skip-link").addEventListener("click", (event) => {
   event.preventDefault();
   app.focus();

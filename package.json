@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "check": "node --check server.mjs && node --check dist/app.js && node --check dist/data.js"
+    "check": "node --check server.mjs && node --check dist/app.js && node --check dist/data.js && node --check dist/flow-model.js",
+    "test": "node --test tests/*.test.mjs"
   }
 }
