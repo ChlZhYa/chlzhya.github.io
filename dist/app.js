@@ -5,20 +5,17 @@ import {
   monthDays,
   selectFlow,
   shiftMonth,
-  titleFromBody,
 } from "./flow-model.js";
+import {
+  createEntry,
+  parseSnapshot,
+  parseWriterSession,
+  updateEntry,
+} from "./entry-model.js";
 
 const storageKey = "flow-journal-v1";
-const allowedKinds = new Set(["log", "essay"]);
-const allowedCategories = new Set([
-  "AI / Agent",
-  "开发",
-  "阅读",
-  "生活",
-  "其他",
-  "灵感",
-  "学习",
-]);
+const draftKey = "flow-writer-draft-v1";
+const writeLock = "flow-journal-v1-write";
 const app = document.querySelector("#app");
 const status = document.querySelector("#site-status");
 const searchDialog = document.querySelector("#search-dialog");
@@ -27,6 +24,8 @@ const searchInput = document.querySelector("#search-input");
 const searchResults = document.querySelector("#search-results");
 const form = document.querySelector("#entry-form");
 const formMessage = document.querySelector("#form-message");
+const saveAsNewButton = document.querySelector("#save-as-new");
+const discardDraftButton = document.querySelector("#discard-draft");
 const flowState = {
   month: currentLocalDate().slice(0, 7),
   selectedDate: null,
@@ -37,6 +36,10 @@ const flowState = {
 let userEntries = [];
 let storageError = "";
 let statusTimer;
+let writerSession = null;
+let draftProblem = "";
+let draftIssue = "";
+let saving = false;
 
 function node(tag, attributes = {}, children = []) {
   const element = ["svg", "path", "circle"].includes(tag)
@@ -52,63 +55,9 @@ function node(tag, attributes = {}, children = []) {
   return element;
 }
 
-function validDate(value) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
-    return false;
-  const date = new Date(`${value}T12:00:00Z`);
-  return (
-    Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
-  );
-}
-
-function validEntry(entry) {
-  return (
-    entry &&
-    typeof entry === "object" &&
-    !Array.isArray(entry) &&
-    typeof entry.id === "string" &&
-    /^local-[0-9a-f-]{36}$/.test(entry.id) &&
-    allowedKinds.has(entry.kind) &&
-    typeof entry.title === "string" &&
-    entry.title.trim().length > 0 &&
-    entry.title.length <= 100 &&
-    validDate(entry.date) &&
-    allowedCategories.has(entry.category) &&
-    Array.isArray(entry.tags) &&
-    entry.tags.length <= 8 &&
-    entry.tags.every(
-      (tag) =>
-        typeof tag === "string" &&
-        tag.trim() === tag &&
-        tag.length > 0 &&
-        tag.length <= 24,
-    ) &&
-    typeof entry.body === "string" &&
-    entry.body.trim().length > 0 &&
-    entry.body.length <= 30000 &&
-    typeof entry.updatedAt === "string" &&
-    Number.isFinite(Date.parse(entry.updatedAt))
-  );
-}
-
 function loadEntries() {
   try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw === null) {
-      storageError = "";
-      return [];
-    }
-    const snapshot = JSON.parse(raw);
-    if (
-      !snapshot ||
-      snapshot.version !== 1 ||
-      !Array.isArray(snapshot.entries) ||
-      snapshot.entries.length > 10000 ||
-      !snapshot.entries.every(validEntry) ||
-      new Set(snapshot.entries.map((entry) => entry.id)).size !==
-        snapshot.entries.length
-    )
-      throw new Error("Invalid snapshot");
+    const snapshot = parseSnapshot(localStorage.getItem(storageKey));
     storageError = "";
     return snapshot.entries;
   } catch {
@@ -119,6 +68,21 @@ function loadEntries() {
 }
 
 userEntries = loadEntries();
+let storedDraft;
+try {
+  storedDraft = sessionStorage.getItem(draftKey);
+} catch {
+  draftIssue = "unavailable";
+  draftProblem = "浏览器拒绝访问此标签页的草稿存储。表单在页面打开期间可继续填写并保存记录，但刷新后无法恢复草稿。";
+}
+if (!draftIssue) {
+  try {
+    writerSession = parseWriterSession(storedDraft);
+  } catch {
+    draftIssue = "corrupt";
+    draftProblem = "此标签页的草稿无法读取。原草稿未被覆盖；可先检查站点数据，或明确舍弃它后重新开始。";
+  }
+}
 
 function allEntries() {
   return [...userEntries, ...seedEntries].sort(
@@ -581,6 +545,15 @@ function reader(entry) {
       tagsFor(entry),
     ]),
   );
+  if (!isDemo(entry)) {
+    const edit = node("button", {
+      class: "outline-button reader-edit",
+      type: "button",
+      text: "修改这条记录 ↗",
+    });
+    edit.addEventListener("click", () => openEdit(entry));
+    article.append(edit);
+  }
   const body = node("div", { class: "prose" });
   let text = entry.body.trim();
   if (entry.kind === "log" && text.split(/\r?\n/)[0] === entry.title)
@@ -629,7 +602,7 @@ function about() {
       node("section", {}, [
         node("h2", { text: "关于保存" }),
         node("p", {
-          text: "你写下的内容只存在当前浏览器的本地存储中。这里没有账户、跨设备同步或公开发布。清除浏览器站点数据、使用无痕窗口或更换设备，都可能让记录无法找回。",
+          text: "已保存的记录留在当前浏览器。未完成的草稿只在这个标签页保留，刷新后可以继续；关闭标签页、清除站点数据或更换设备可能失去内容。这里没有账户、跨设备同步或公开发布。",
         }),
         node("p", {
           text: "可以随时导出 JSON 文件备份。导出只包含你自己保存的记录，不包含页面示例。当前版本尚不支持导入备份。",
@@ -756,20 +729,76 @@ function search() {
   }
 }
 
-function openWriter() {
-  formMessage.textContent = "";
-  const hasDraft = ["title", "tags", "body"].some((field) =>
-    form.elements[field].value.trim(),
-  );
-  if (!hasDraft)
-    form.elements.kind.value = route().name === "essays" ? "essay" : "log";
+const draftFields = ["kind", "title", "date", "category", "tags", "body"];
+
+function readDraft() {
+  return Object.fromEntries(draftFields.map((field) => [field, form.elements[field].value]));
+}
+
+function storeWriterSession() {
+  if (!writerSession || draftIssue) return;
+  try {
+    sessionStorage.setItem(draftKey, JSON.stringify({ version: 1, session: writerSession }));
+  } catch {
+    draftIssue = "unavailable";
+    draftProblem = "无法保留刷新后的草稿。请保持此页面打开，或先复制表单内容；正式记录仍可尝试保存。";
+    formMessage.textContent = draftProblem;
+  }
+}
+
+function persistDraft() {
+  if (!writerSession) return;
+  writerSession.draft = readDraft();
+  writerSession.touched = true;
+  storeWriterSession();
+}
+
+function showWriter(message = "") {
+  for (const field of draftFields)
+    form.elements[field].value = writerSession.draft[field];
   syncWriter();
-  if (!form.elements.date.value) form.elements.date.value = currentLocalDate();
-  writeDialog.showModal();
-  (form.elements.kind.value === "log"
-    ? form.elements.body
-    : form.elements.title
-  ).focus();
+  saveAsNewButton.hidden = true;
+  discardDraftButton.hidden = !writerSession && !draftProblem;
+  formMessage.textContent = draftProblem || message;
+  if (!writeDialog.open) writeDialog.showModal();
+  (form.elements.kind.value === "log" ? form.elements.body : form.elements.title).focus();
+}
+
+function openWriter() {
+  if (!writerSession && draftIssue !== "corrupt") {
+    writerSession = { mode: "create", touched: false, draft: {
+      kind: route().name === "essays" ? "essay" : "log",
+      title: "", date: currentLocalDate(), category: "灵感", tags: "", body: "",
+    } };
+  }
+  if (writerSession?.mode === "create" && !writerSession.touched)
+    writerSession.draft.kind = route().name === "essays" ? "essay" : "log";
+  if (writerSession) showWriter();
+  else {
+    form.reset();
+    syncWriter();
+    discardDraftButton.hidden = false;
+    formMessage.textContent = draftProblem;
+    if (!writeDialog.open) writeDialog.showModal();
+  }
+}
+
+function openEdit(entry) {
+  if (writerSession?.mode === "create" && !writerSession.touched)
+    writerSession = null;
+  if (writerSession || draftIssue === "corrupt") {
+    openWriter();
+    if (!draftProblem && (writerSession.mode !== "edit" || writerSession.id !== entry.id))
+      formMessage.textContent = "此标签页还有未完成的草稿。保存或舍弃后，再修改这条记录。";
+    return;
+  }
+  writerSession = {
+    mode: "edit", touched: false, id: entry.id, baseline: structuredClone(entry),
+    draft: { kind: entry.kind, title: entry.title, date: entry.date,
+      category: entry.category, tags: entry.tags.join("，"), body: entry.body },
+  };
+  storeWriterSession();
+  showWriter();
 }
 
 function syncWriter() {
@@ -778,75 +807,102 @@ function syncWriter() {
   form.elements.title.placeholder = essay
     ? "文章标题"
     : "选填，留空将用正文第一行";
-  document.querySelector("#write-title").textContent = essay
-    ? "写一篇文章"
-    : "记下一个念头";
+  document.querySelector("#write-title").textContent = writerSession?.mode === "edit"
+    ? (essay ? "修改文章" : "修改 Flow")
+    : (essay ? "写一篇文章" : "记下一个念头");
   form.querySelector(".title-label .optional").textContent = essay
     ? "必填"
     : "选填";
+  form.querySelector(".save-entry").firstChild.textContent =
+    writerSession?.mode === "edit" ? "保存修改 " : "保存到此浏览器 ";
 }
 
-function saveEntry(event) {
+function saveError(error) {
+  if (error?.code === "conflict") {
+    saveAsNewButton.hidden = false;
+    return "这条记录已在别处修改或不再存在。输入仍保留；可复制内容，或明确另存为新记录。";
+  }
+  saveAsNewButton.hidden = true;
+  if (error?.code === "capacity") return "记录已达到 10,000 条，无法继续新增。请先导出备份。";
+  if (error?.code === "duplicate") return "新记录编号发生冲突，请重试。";
+  if (error?.code === "entry") return "请检查正文、日期和标题。文章需要标题；标签最多 8 个，每个不超过 24 字。";
+  if (error?.code === "snapshot") {
+    storageError = "当前浏览器中的记录无法读取。为避免覆盖原数据，暂时无法保存。请先检查浏览器站点数据。";
+    return storageError;
+  }
+  return "保存失败。当前浏览器可能禁用了本地存储或空间已满。内容仍留在表单中，可复制后重试。";
+}
+
+async function saveEntry(event, asNew = false) {
   event.preventDefault();
+  if (saving) return;
   formMessage.textContent = "";
-  if (storageError) {
-    formMessage.textContent = storageError;
+  if (!writerSession || draftIssue === "corrupt") {
+    formMessage.textContent = draftProblem || "请重新打开写作窗口。";
     return;
   }
-  const data = new FormData(form);
-  const tags = String(data.get("tags") ?? "")
-    .split(/[,，]/)
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-  const entry = {
-    id: `local-${crypto.randomUUID()}`,
-    kind: String(data.get("kind") ?? ""),
-    title:
-      String(data.get("title") ?? "").trim() ||
-      (data.get("kind") === "log"
-        ? titleFromBody(String(data.get("body") ?? ""))
-        : ""),
-    date: String(data.get("date") ?? ""),
-    category: String(data.get("category") ?? ""),
-    tags: [...new Set(tags)],
-    body: String(data.get("body") ?? "").trim(),
-    updatedAt: new Date().toISOString(),
-  };
-  if (!validEntry(entry)) {
-    formMessage.textContent =
-      "请检查正文、日期和标题。文章需要标题；标签最多 8 个，每个不超过 24 字。";
+  persistDraft();
+  if (!navigator.locks?.request) {
+    formMessage.textContent = [draftProblem, "当前浏览器不支持安全的多标签页写入。输入仍保留；请复制内容后在支持 Web Locks 的浏览器中保存。"].filter(Boolean).join(" ");
     return;
   }
-  const latest = loadEntries();
-  if (storageError) {
-    formMessage.textContent = storageError;
-    return;
-  }
-  const next = [entry, ...latest];
+  let result;
+  const submit = form.querySelector(".save-entry");
+  saving = true;
+  submit.disabled = true;
+  saveAsNewButton.disabled = true;
   try {
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify({ version: 1, entries: next }),
-    );
-  } catch {
-    formMessage.textContent =
-      "保存失败。当前浏览器可能禁用了本地存储或空间已满。内容仍留在表单中，可复制后重试。";
+    await navigator.locks.request(writeLock, () => {
+      const latest = parseSnapshot(localStorage.getItem(storageKey));
+      const draft = readDraft();
+      const timestamp = new Date().toISOString();
+      result = writerSession.mode === "edit" && !asNew
+        ? updateEntry(latest, draft, writerSession.id, writerSession.baseline, timestamp)
+        : createEntry(latest, draft, `local-${crypto.randomUUID()}`, timestamp);
+      localStorage.setItem(storageKey, JSON.stringify(result.snapshot));
+    });
+  } catch (error) {
+    formMessage.textContent = [draftProblem, saveError(error)].filter(Boolean).join(" ");
     return;
+  } finally {
+    saving = false;
+    submit.disabled = false;
+    saveAsNewButton.disabled = false;
   }
-  userEntries = next;
+  storageError = "";
+  userEntries = result.snapshot.entries;
+  let draftCleared = true;
+  try {
+    sessionStorage.removeItem(draftKey);
+  } catch {
+    draftCleared = false;
+  }
+  writerSession = null;
+  if (draftCleared) {
+    draftProblem = "";
+    draftIssue = "";
+  }
   form.reset();
   syncWriter();
   writeDialog.close();
-  announce("已保存到当前浏览器。建议定期导出备份。");
-  location.hash = entryHref(entry);
+  announce(draftCleared
+    ? "已保存到当前浏览器。建议定期导出备份。"
+    : "记录已保存，但无法清除旧草稿。刷新后若看到旧内容，请勿重复保存。");
+  const href = entryHref(result.entry);
+  if (location.hash === href) render();
+  else location.hash = href;
 }
 
 function exportEntries() {
-  if (storageError) {
+  let snapshot;
+  try {
+    snapshot = parseSnapshot(localStorage.getItem(storageKey));
+    userEntries = snapshot.entries;
+    storageError = "";
+  } catch {
     announce("本地记录无法读取，暂时不能生成可靠的备份。");
     return;
   }
-  const snapshot = { version: 1, entries: userEntries };
   const blob = new Blob([JSON.stringify(snapshot, null, 2)], {
     type: "application/json",
   });
@@ -874,7 +930,11 @@ document.querySelector(".search-trigger").addEventListener("click", () => {
 document
   .querySelector(".site-header .write-trigger")
   .addEventListener("click", openWriter);
-form.elements.kind.addEventListener("change", syncWriter);
+form.addEventListener("input", persistDraft);
+form.addEventListener("change", () => {
+  syncWriter();
+  persistDraft();
+});
 document.querySelector(".skip-link").addEventListener("click", (event) => {
   event.preventDefault();
   app.focus();
@@ -888,6 +948,25 @@ document
 document
   .querySelector(".cancel-write")
   .addEventListener("click", () => writeDialog.close());
+discardDraftButton.addEventListener("click", () => {
+  if (draftIssue !== "unavailable") {
+    try {
+      sessionStorage.removeItem(draftKey);
+    } catch {
+      formMessage.textContent = "无法舍弃草稿。请先检查浏览器的站点存储权限。";
+      return;
+    }
+  }
+  writerSession = null;
+  if (draftIssue !== "unavailable") {
+    draftProblem = "";
+    draftIssue = "";
+  }
+  form.reset();
+  writeDialog.close();
+  announce("已舍弃此标签页的草稿。");
+});
+saveAsNewButton.addEventListener("click", (event) => saveEntry(event, true));
 document
   .querySelector(".site-footer .export-trigger")
   .addEventListener("click", exportEntries);
@@ -895,7 +974,7 @@ searchInput.addEventListener("input", search);
 form.addEventListener("submit", saveEntry);
 window.addEventListener("hashchange", navigate);
 window.addEventListener("storage", (event) => {
-  if (event.key !== storageKey) return;
+  if (event.key !== storageKey && event.key !== null) return;
   userEntries = loadEntries();
   render();
   announce(
@@ -905,3 +984,4 @@ window.addEventListener("storage", (event) => {
   );
 });
 render();
+if (writerSession) openWriter();

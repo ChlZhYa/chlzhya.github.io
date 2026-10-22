@@ -7,6 +7,7 @@ const resources = new Map([
   ["/app.js", "text/javascript"],
   ["/data.js", "text/javascript"],
   ["/flow-model.js", "text/javascript"],
+  ["/entry-model.js", "text/javascript"],
 ]);
 
 for (const [path, mime] of resources) {
