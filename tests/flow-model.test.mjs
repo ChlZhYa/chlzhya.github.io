@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   categoryGroup,
   monthDays,
+  readingBody,
   selectFlow,
   shiftMonth,
   titleFromBody,
@@ -56,4 +57,21 @@ test("date and category intersect, with activity counted before pagination", () 
 test("body-first title uses the first nonempty line and is bounded", () => {
   assert.equal(titleFromBody("\n  一闪而过的念头  \n后续"), "一闪而过的念头");
   assert.equal(Array.from(titleFromBody("想".repeat(80))).length, 48);
+});
+
+test("thought previews omit only the complete repeated title line", () => {
+  const entry = { kind: "log", title: "一个念头" };
+  assert.equal(
+    readingBody({ ...entry, body: "一个念头\r\n\r\n再补充一点。" }),
+    "再补充一点。",
+  );
+  assert.equal(readingBody({ ...entry, body: "一个念头" }), "");
+  assert.equal(
+    readingBody({ ...entry, body: "一个念头还没有说完。" }),
+    "一个念头还没有说完。",
+  );
+  assert.equal(
+    readingBody({ ...entry, kind: "essay", body: "一个念头\n\n正文。" }),
+    "一个念头\n\n正文。",
+  );
 });

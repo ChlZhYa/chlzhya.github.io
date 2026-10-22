@@ -21,6 +21,13 @@ export function titleFromBody(body) {
       .find(Boolean) ?? "";
   return Array.from(line).slice(0, 48).join("");
 }
+export function readingBody(entry) {
+  const text = entry.body.trim();
+  const firstLine = text.split(/\r?\n/)[0];
+  return entry.kind === "log" && firstLine === entry.title
+    ? text.slice(firstLine.length).trim()
+    : text;
+}
 export function selectFlow(entries, state) {
   const logs = entries.filter((entry) => entry.kind === "log");
   const activity = new Map();

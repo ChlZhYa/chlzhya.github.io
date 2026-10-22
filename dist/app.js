@@ -3,6 +3,7 @@ import {
   categoryGroup,
   flowCategories,
   monthDays,
+  readingBody,
   selectFlow,
   shiftMonth,
 } from "./flow-model.js";
@@ -100,18 +101,12 @@ function entryHref(entry) {
 function shortDate(date) {
   return date.replaceAll("-", ".");
 }
-function weekday(date) {
-  return new Intl.DateTimeFormat("zh-CN", {
-    weekday: "short",
-    timeZone: "UTC",
-  }).format(new Date(`${date}T12:00:00Z`));
-}
 function currentLocalDate() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 function excerpt(entry) {
-  return entry.body.replace(/\s+/g, " ").slice(0, 138);
+  return readingBody(entry).replace(/\s+/g, " ").slice(0, 138);
 }
 function announce(message) {
   status.textContent = message;
@@ -249,6 +244,9 @@ function thoughtCard(entry, index) {
         : []),
     ]),
     node("h2", {}, [node("a", { href: entryHref(entry), text: entry.title })]),
+    ...(excerpt(entry)
+      ? [node("p", { class: "thought-preview", text: excerpt(entry) })]
+      : []),
     node("span", {
       class: "category-pill " + categoryGroup(entry.category),
       text: categoryGroup(entry.category),
@@ -555,9 +553,7 @@ function reader(entry) {
     article.append(edit);
   }
   const body = node("div", { class: "prose" });
-  let text = entry.body.trim();
-  if (entry.kind === "log" && text.split(/\r?\n/)[0] === entry.title)
-    text = text.slice(entry.title.length).trim();
+  const text = readingBody(entry);
   if (text)
     for (const paragraph of text.split(/\n\s*\n/))
       body.append(node("p", { text: paragraph }));

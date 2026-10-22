@@ -26,7 +26,7 @@ function validDraft(draft) {
     draftFields.every((field) => typeof draft[field] === "string") &&
     kinds.has(draft.kind) && categories.has(draft.category) &&
     (draft.date === "" || validDate(draft.date)) &&
-    draft.title.length <= 100 && draft.tags.length <= 120 && draft.body.length <= 30000;
+    draft.title.length <= 100 && draft.tags.length <= 256 && draft.body.length <= 30000;
 }
 
 export function validEntry(entry) {

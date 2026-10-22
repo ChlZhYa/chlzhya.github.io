@@ -69,3 +69,17 @@ test("article title is required and partial raw drafts survive independently fro
   assert.throws(() => parseWriterSession(JSON.stringify({ version: 1, session: { ...incomplete, draft: { ...draft, date: "broken" } } })), { code: "draft" });
   assert.throws(() => parseWriterSession(JSON.stringify({ version: 1, session: { ...incomplete, draft: { ...draft, body: "字".repeat(30001) } } })), { code: "draft" });
 });
+
+test("editing a full snapshot remains allowed and all valid legacy tags can recover", () => {
+  const tags = Array.from({ length: 8 }, (_, i) => String(i).repeat(24));
+  const original = { ...baseEntry, tags };
+  const rawDraft = { ...draft, tags: tags.join("，") };
+  const edit = { mode: "edit", touched: true, id: firstId, baseline: original, draft: rawDraft };
+  assert.deepEqual(parseWriterSession(JSON.stringify({ version: 1, session: edit })), edit);
+  const full = { version: 1, entries: Array.from({ length: maximumEntries }, (_, i) => ({
+    ...original, id: `local-00000000-0000-0000-0000-${String(i + 1).padStart(12, "0")}`,
+  })) };
+  const result = updateEntry(parseSnapshot(JSON.stringify(full)), rawDraft, firstId, original, timestamp);
+  assert.equal(result.snapshot.entries.length, maximumEntries);
+  assert.deepEqual(result.entry.tags, tags);
+});

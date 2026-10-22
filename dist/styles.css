@@ -335,7 +335,7 @@ main {
   gap: 28px 22px;
   align-items: start;
   min-height: 330px;
-  padding: 18px 0 25px;
+  padding: 18px 0 70px;
 }
 .connector {
   position: absolute;
@@ -376,7 +376,32 @@ main {
   transform: translateY(-5px);
   box-shadow: 0 18px 40px #4d57a426;
 }
+.thought-card:focus-within {
+  outline: 2px solid var(--violet);
+  outline-offset: 5px;
+}
+.thought-card h2 a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+}
+.thought-card h2 a:focus-visible {
+  outline: none;
+}
+.thought-preview {
+  margin: 10px 0 5px;
+  color: #5f6580;
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .thought-card::after {
+  pointer-events: none;
   content: "";
   position: absolute;
   width: 14px;
@@ -464,6 +489,12 @@ main {
 }
 .card-2 .thought-meta {
   color: #e5e1ff;
+}
+.card-2 .thought-preview {
+  color: #eeebff;
+}
+.card-2 a:hover {
+  color: #fff;
 }
 .card-2 .thought-dot {
   background: #fff;
