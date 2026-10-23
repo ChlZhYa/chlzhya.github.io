@@ -7,26 +7,14 @@ import {
   selectFlow,
   shiftMonth,
 } from "./flow-model.js";
-import {
-  createEntry,
-  parseSnapshot,
-  parseWriterSession,
-  updateEntry,
-} from "./entry-model.js";
+import { parseSnapshot } from "./entry-model.js";
 
 const storageKey = "flow-journal-v1";
-const draftKey = "flow-writer-draft-v1";
-const writeLock = "flow-journal-v1-write";
 const app = document.querySelector("#app");
 const status = document.querySelector("#site-status");
 const searchDialog = document.querySelector("#search-dialog");
-const writeDialog = document.querySelector("#write-dialog");
 const searchInput = document.querySelector("#search-input");
 const searchResults = document.querySelector("#search-results");
-const form = document.querySelector("#entry-form");
-const formMessage = document.querySelector("#form-message");
-const saveAsNewButton = document.querySelector("#save-as-new");
-const discardDraftButton = document.querySelector("#discard-draft");
 const flowState = {
   month: currentLocalDate().slice(0, 7),
   selectedDate: null,
@@ -37,10 +25,6 @@ const flowState = {
 let userEntries = [];
 let storageError = "";
 let statusTimer;
-let writerSession = null;
-let draftProblem = "";
-let draftIssue = "";
-let saving = false;
 
 function node(tag, attributes = {}, children = []) {
   const element = ["svg", "path", "circle"].includes(tag)
@@ -69,21 +53,6 @@ function loadEntries() {
 }
 
 userEntries = loadEntries();
-let storedDraft;
-try {
-  storedDraft = sessionStorage.getItem(draftKey);
-} catch {
-  draftIssue = "unavailable";
-  draftProblem = "浏览器拒绝访问此标签页的草稿存储。表单在页面打开期间可继续填写并保存记录，但刷新后无法恢复草稿。";
-}
-if (!draftIssue) {
-  try {
-    writerSession = parseWriterSession(storedDraft);
-  } catch {
-    draftIssue = "corrupt";
-    draftProblem = "此标签页的草稿无法读取。原草稿未被覆盖；可先检查站点数据，或明确舍弃它后重新开始。";
-  }
-}
 
 function allEntries() {
   return [...userEntries, ...seedEntries].sort(
@@ -477,15 +446,6 @@ function essays() {
       "那些没有标准答案的想法，值得给它们一些时间。",
     ),
   ]);
-  root.append(
-    node("div", { class: "essay-actions" }, [
-      node("button", {
-        class: "outline-button write-trigger",
-        type: "button",
-        text: "写一篇 ↗",
-      }),
-    ]),
-  );
   if (storageError) root.append(storageAlert());
   const list = node("section", {
     class: "essay-index",
@@ -543,15 +503,6 @@ function reader(entry) {
       tagsFor(entry),
     ]),
   );
-  if (!isDemo(entry)) {
-    const edit = node("button", {
-      class: "outline-button reader-edit",
-      type: "button",
-      text: "修改这条记录 ↗",
-    });
-    edit.addEventListener("click", () => openEdit(entry));
-    article.append(edit);
-  }
   const body = node("div", { class: "prose" });
   const text = readingBody(entry);
   if (text)
@@ -576,11 +527,6 @@ function about() {
     ),
   ]);
   if (storageError) root.append(storageAlert());
-  const writeButton = node("button", {
-    class: "outline-button write-trigger",
-    type: "button",
-    text: "写下新记录 ↗",
-  });
   const exportButton = node("button", {
     class: "outline-button export-trigger",
     type: "button",
@@ -593,12 +539,11 @@ function about() {
         node("p", {
           text: "“Flow”收下小想法、观察和突然想通的瞬间；“文章”留给需要更长篇幅的思考。页面中的示例仅展示这个空间可以如何使用，不代表真实个人经历。",
         }),
-        writeButton,
       ]),
       node("section", {}, [
         node("h2", { text: "关于保存" }),
         node("p", {
-          text: "已保存的记录留在当前浏览器。未完成的草稿只在这个标签页保留，刷新后可以继续；关闭标签页、清除站点数据或更换设备可能失去内容。这里没有账户、跨设备同步或公开发布。",
+          text: "这里是一个安静的展示空间，不再提供在线写入。早前在这个浏览器保存过的记录仍会正常显示；它们只留在本地，没有账户，也不会跨设备同步。",
         }),
         node("p", {
           text: "可以随时导出 JSON 文件备份。导出只包含你自己保存的记录，不包含页面示例。当前版本尚不支持导入备份。",
@@ -646,8 +591,6 @@ function render() {
     if (entry) app.append(reader(entry));
     else app.append(notFound());
   } else app.append(notFound());
-  for (const button of app.querySelectorAll(".write-trigger"))
-    button.addEventListener("click", openWriter);
   for (const button of app.querySelectorAll(".export-trigger"))
     button.addEventListener("click", exportEntries);
 }
@@ -725,175 +668,6 @@ function search() {
   }
 }
 
-const draftFields = ["kind", "title", "date", "category", "tags", "body"];
-
-function readDraft() {
-  return Object.fromEntries(draftFields.map((field) => [field, form.elements[field].value]));
-}
-
-function storeWriterSession() {
-  if (!writerSession || draftIssue) return;
-  try {
-    sessionStorage.setItem(draftKey, JSON.stringify({ version: 1, session: writerSession }));
-  } catch {
-    draftIssue = "unavailable";
-    draftProblem = "无法保留刷新后的草稿。请保持此页面打开，或先复制表单内容；正式记录仍可尝试保存。";
-    formMessage.textContent = draftProblem;
-  }
-}
-
-function persistDraft() {
-  if (!writerSession || saving) return;
-  writerSession.draft = readDraft();
-  writerSession.touched = true;
-  storeWriterSession();
-}
-
-function showWriter(message = "") {
-  for (const field of draftFields)
-    form.elements[field].value = writerSession.draft[field];
-  syncWriter();
-  saveAsNewButton.hidden = true;
-  discardDraftButton.hidden = !writerSession && !draftProblem;
-  formMessage.textContent = draftProblem || message;
-  if (!writeDialog.open) writeDialog.showModal();
-  (form.elements.kind.value === "log" ? form.elements.body : form.elements.title).focus();
-}
-
-function openWriter() {
-  if (saving) return;
-  if (!writerSession && draftIssue !== "corrupt") {
-    writerSession = { mode: "create", touched: false, draft: {
-      kind: route().name === "essays" ? "essay" : "log",
-      title: "", date: currentLocalDate(), category: "灵感", tags: "", body: "",
-    } };
-  }
-  if (writerSession?.mode === "create" && !writerSession.touched)
-    writerSession.draft.kind = route().name === "essays" ? "essay" : "log";
-  if (writerSession) showWriter();
-  else {
-    form.reset();
-    syncWriter();
-    discardDraftButton.hidden = false;
-    formMessage.textContent = draftProblem;
-    if (!writeDialog.open) writeDialog.showModal();
-  }
-}
-
-function openEdit(entry) {
-  if (saving) return;
-  if (writerSession?.mode === "create" && !writerSession.touched)
-    writerSession = null;
-  if (writerSession || draftIssue === "corrupt") {
-    openWriter();
-    if (!draftProblem && (writerSession.mode !== "edit" || writerSession.id !== entry.id))
-      formMessage.textContent = "此标签页还有未完成的草稿。保存或舍弃后，再修改这条记录。";
-    return;
-  }
-  writerSession = {
-    mode: "edit", touched: false, id: entry.id, baseline: structuredClone(entry),
-    draft: { kind: entry.kind, title: entry.title, date: entry.date,
-      category: entry.category, tags: entry.tags.join("，"), body: entry.body },
-  };
-  storeWriterSession();
-  showWriter();
-}
-
-function syncWriter() {
-  const essay = form.elements.kind.value === "essay";
-  form.elements.title.required = essay;
-  form.elements.title.placeholder = essay
-    ? "文章标题"
-    : "选填，留空将用正文第一行";
-  document.querySelector("#write-title").textContent = writerSession?.mode === "edit"
-    ? (essay ? "修改文章" : "修改 Flow")
-    : (essay ? "写一篇文章" : "记下一个念头");
-  form.querySelector(".title-label .optional").textContent = essay
-    ? "必填"
-    : "选填";
-  form.querySelector(".save-entry").firstChild.textContent =
-    writerSession?.mode === "edit" ? "保存修改 " : "保存到此浏览器 ";
-}
-
-function saveError(error) {
-  if (error?.code === "conflict") {
-    saveAsNewButton.hidden = false;
-    return "这条记录已在别处修改或不再存在。输入仍保留；可复制内容，或明确另存为新记录。";
-  }
-  saveAsNewButton.hidden = true;
-  if (error?.code === "capacity") return "记录已达到 10,000 条，无法继续新增。请先导出备份。";
-  if (error?.code === "duplicate") return "新记录编号发生冲突，请重试。";
-  if (error?.code === "entry") return "请检查正文、日期和标题。文章需要标题；标签最多 8 个，每个不超过 24 字。";
-  if (error?.code === "snapshot") {
-    storageError = "当前浏览器中的记录无法读取。为避免覆盖原数据，暂时无法保存。请先检查浏览器站点数据。";
-    return storageError;
-  }
-  return "保存失败。当前浏览器可能禁用了本地存储或空间已满。内容仍留在表单中，可复制后重试。";
-}
-
-async function saveEntry(event, asNew = false) {
-  event.preventDefault();
-  if (saving) return;
-  formMessage.textContent = "";
-  if (!writerSession || draftIssue === "corrupt") {
-    formMessage.textContent = draftProblem || "请重新打开写作窗口。";
-    return;
-  }
-  persistDraft();
-  if (!navigator.locks?.request) {
-    formMessage.textContent = [draftProblem, "当前浏览器不支持安全的多标签页写入。输入仍保留；请复制内容后在支持 Web Locks 的浏览器中保存。"].filter(Boolean).join(" ");
-    return;
-  }
-  let result;
-  const submitted = structuredClone(writerSession);
-  const draft = readDraft();
-  const controls = [...writeDialog.querySelectorAll("button, input, select, textarea")];
-  const disabledBeforeSave = controls.map((control) => control.disabled);
-  saving = true;
-  controls.forEach((control) => { control.disabled = true; });
-  writeDialog.setAttribute("aria-busy", "true");
-  formMessage.textContent = "正在保存，请稍候…";
-  try {
-    await navigator.locks.request(writeLock, () => {
-      const latest = parseSnapshot(localStorage.getItem(storageKey));
-      const timestamp = new Date().toISOString();
-      result = submitted.mode === "edit" && !asNew
-        ? updateEntry(latest, draft, submitted.id, submitted.baseline, timestamp)
-        : createEntry(latest, draft, `local-${crypto.randomUUID()}`, timestamp);
-      localStorage.setItem(storageKey, JSON.stringify(result.snapshot));
-    });
-  } catch (error) {
-    formMessage.textContent = [draftProblem, saveError(error)].filter(Boolean).join(" ");
-    return;
-  } finally {
-    saving = false;
-    controls.forEach((control, index) => { control.disabled = disabledBeforeSave[index]; });
-    writeDialog.removeAttribute("aria-busy");
-  }
-  storageError = "";
-  userEntries = result.snapshot.entries;
-  let draftCleared = true;
-  try {
-    sessionStorage.removeItem(draftKey);
-  } catch {
-    draftCleared = false;
-  }
-  writerSession = null;
-  if (draftCleared) {
-    draftProblem = "";
-    draftIssue = "";
-  }
-  form.reset();
-  syncWriter();
-  writeDialog.close();
-  announce(draftCleared
-    ? "已保存到当前浏览器。建议定期导出备份。"
-    : "记录已保存，但无法清除旧草稿。刷新后若看到旧内容，请勿重复保存。");
-  const href = entryHref(result.entry);
-  if (location.hash === href) render();
-  else location.hash = href;
-}
-
 function exportEntries() {
   let snapshot;
   try {
@@ -928,14 +702,6 @@ document.querySelector(".search-trigger").addEventListener("click", () => {
   searchInput.focus();
   search();
 });
-document
-  .querySelector(".site-header .write-trigger")
-  .addEventListener("click", openWriter);
-form.addEventListener("input", persistDraft);
-form.addEventListener("change", () => {
-  syncWriter();
-  persistDraft();
-});
 document.querySelector(".skip-link").addEventListener("click", (event) => {
   event.preventDefault();
   app.focus();
@@ -947,32 +713,9 @@ document
     button.addEventListener("click", () => button.closest("dialog").close()),
   );
 document
-  .querySelector(".cancel-write")
-  .addEventListener("click", () => writeDialog.close());
-discardDraftButton.addEventListener("click", () => {
-  if (saving) return;
-  try {
-    sessionStorage.removeItem(draftKey);
-  } catch {
-    formMessage.textContent = "无法舍弃草稿，原内容仍保留。请先检查浏览器的站点存储权限。";
-    return;
-  }
-  writerSession = null;
-  draftProblem = "";
-  draftIssue = "";
-  form.reset();
-  writeDialog.close();
-  announce("已舍弃此标签页的草稿。");
-});
-writeDialog.addEventListener("cancel", (event) => {
-  if (saving) event.preventDefault();
-});
-saveAsNewButton.addEventListener("click", (event) => saveEntry(event, true));
-document
   .querySelector(".site-footer .export-trigger")
   .addEventListener("click", exportEntries);
 searchInput.addEventListener("input", search);
-form.addEventListener("submit", saveEntry);
 window.addEventListener("hashchange", navigate);
 window.addEventListener("storage", (event) => {
   if (event.key !== storageKey && event.key !== null) return;
@@ -985,4 +728,3 @@ window.addEventListener("storage", (event) => {
   );
 });
 render();
-if (writerSession) openWriter();

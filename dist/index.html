@@ -28,9 +28,6 @@
           <a href="#/essays" data-nav="essays">文章</a>
           <a href="#/about" data-nav="about">关于</a>
         </nav>
-        <button class="header-write write-trigger" type="button">
-          记一笔 <span aria-hidden="true">＋</span>
-        </button>
         <button
           class="icon-button search-trigger"
           type="button"
@@ -116,85 +113,5 @@
       <div id="search-results" class="search-results" aria-live="polite"></div>
     </dialog>
 
-    <dialog
-      id="write-dialog"
-      class="modal write-modal"
-      aria-labelledby="write-title"
-    >
-      <div class="dialog-head">
-        <div>
-          <p class="eyebrow">A NOTE TO KEEP</p>
-          <h2 id="write-title">写下这一刻</h2>
-        </div>
-        <button
-          class="icon-button dialog-close"
-          type="button"
-          aria-label="关闭写作窗口"
-        >
-          ×
-        </button>
-      </div>
-      <form id="entry-form" novalidate>
-        <label class="body-label"
-          >正文<textarea
-            name="body"
-            rows="9"
-            maxlength="30000"
-            placeholder="此刻在想什么？"
-            required
-          ></textarea>
-        </label>
-        <label class="title-label"
-          >标题 <span class="optional">选填</span
-          ><input
-            name="title"
-            type="text"
-            maxlength="100"
-            placeholder="选填，留空将用正文第一行"
-        /></label>
-        <div class="form-pair entry-meta">
-          <label
-            >记录类型<select name="kind" required>
-              <option value="log">Flow</option>
-              <option value="essay">文章</option>
-            </select></label
-          >
-          <label>日期<input name="date" type="date" required /></label>
-        </div>
-        <div class="form-pair entry-details">
-          <label
-            >分类<select name="category" required>
-              <option value="AI / Agent">AI / Agent</option>
-              <option value="开发">开发</option>
-              <option value="阅读">阅读</option>
-              <option value="灵感" selected>灵感</option>
-              <option value="学习">学习</option>
-              <option value="生活">生活</option>
-              <option value="其他">其他</option>
-            </select></label
-          >
-          <label
-            >标签 <span class="optional">选填，用逗号分隔</span
-            ><input
-              name="tags"
-              type="text"
-              maxlength="256"
-              placeholder="例如：RAG，笔记"
-          /></label>
-        </div>
-        <p id="form-message" class="form-message" role="alert"></p>
-        <button id="save-as-new" class="outline-button" type="button" hidden>另存为新记录</button>
-        <div class="form-actions">
-          <button id="discard-draft" class="text-button" type="button" hidden>舍弃草稿</button>
-          <button class="text-button cancel-write" type="button">稍后继续</button
-          ><button class="solid-button save-entry" type="submit">
-            保存到此浏览器 <span aria-hidden="true">↗</span>
-          </button>
-        </div>
-      </form>
-      <p class="storage-note">
-        未完成的草稿只在此标签页保留，刷新可继续；关闭标签页或清除站点数据后可能丢失。已保存的记录请定期导出备份。
-      </p>
-    </dialog>
   </body>
 </html>
