@@ -89,10 +89,32 @@ a:hover {
   gap: 56px;
 }
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-size: 27px;
   font-weight: 800;
   letter-spacing: -0.09em;
   line-height: 1;
+}
+.brand-mark {
+  width: 30px;
+  height: 30px;
+  display: block;
+  flex: none;
+}
+.brand-mark circle {
+  transform-origin: 24.6px 11.4px;
+  transition: transform 0.3s cubic-bezier(0.2, 1.5, 0.5, 1);
+}
+.brand:hover .brand-mark circle {
+  transform: translateY(-2.5px);
+}
+.footer-mark {
+  width: 20px;
+  height: 20px;
+  vertical-align: -4px;
+  margin-right: 8px;
 }
 .main-nav {
   display: flex;
