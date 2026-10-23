@@ -3,6 +3,7 @@ import {
   categoryGroup,
   flowCategories,
   monthDays,
+  monthStartWeekday,
   readingBody,
   selectFlow,
   shiftMonth,
@@ -47,7 +48,7 @@ function loadEntries() {
     return snapshot.entries;
   } catch {
     storageError =
-      "当前浏览器中的记录无法读取。为避免覆盖原数据，暂时无法保存新记录。请先检查浏览器站点数据。";
+      "当前浏览器中的记录无法读取，暂时无法导出备份。请先检查浏览器站点数据。";
     return [];
   }
 }
@@ -127,61 +128,24 @@ function updateFlow(focusSelector, message) {
   if (message) announce(message);
 }
 
-function ringCalendar(activity) {
+function monthLabel(month) {
+  const [year, number] = month.split("-").map(Number);
+  return year + " 年 " + number + " 月";
+}
+
+function datePanel(activity) {
   const [year, month] = flowState.month.split("-").map(Number);
-  const ring = node("section", {
-    class: "ring-calendar",
+  const panel = node("section", {
+    class: "date-panel" + (flowState.allTime ? " all-time" : ""),
     "aria-label": year + "年" + month + "月 Flow 日历",
   });
-  const days = monthDays(flowState.month);
-  for (let day = 1; day <= days; day++) {
-    const date = flowState.month + "-" + String(day).padStart(2, "0");
-    const count = activity.get(date) ?? 0;
-    const angle = ((day - 1) / days) * Math.PI * 2 - Math.PI / 2;
-    const button = node("button", {
-      class:
-        "ring-day" +
-        (count ? " active" : "") +
-        (date === currentLocalDate() ? " today" : "") +
-        (date === flowState.selectedDate ? " selected" : ""),
-      type: "button",
-      text: String(day),
-      "data-day": date,
-      "aria-label":
-        date +
-        "，" +
-        count +
-        "条 Flow" +
-        (date === currentLocalDate() ? "，今天" : ""),
-      "aria-pressed": String(date === flowState.selectedDate),
-      style:
-        "--x:" +
-        (50 + Math.cos(angle) * 44).toFixed(3) +
-        "%;--y:" +
-        (50 + Math.sin(angle) * 44).toFixed(3) +
-        "%",
-    });
-    button.addEventListener("click", () => {
-      flowState.selectedDate = flowState.selectedDate === date ? null : date;
-      flowState.allTime = false;
-      flowState.visibleCount = 24;
-      updateFlow(
-        '[data-day="' + date + '"]',
-        flowState.selectedDate ? "已筛选 " + date + "。" : "已显示整个月。",
-      );
-    });
-    ring.append(button);
-  }
-  const center = node("div", { class: "ring-center" }, [
-    node("span", { class: "ring-month", text: month + " 月" }),
-    node("span", { class: "ring-year", text: String(year) }),
-  ]);
+  const head = node("div", { class: "date-head" });
   for (const [offset, label] of [
     [-1, "上个月"],
     [1, "下个月"],
   ]) {
     const button = node("button", {
-      class: "ring-arrow " + (offset < 0 ? "previous" : "next"),
+      class: "date-arrow " + (offset < 0 ? "previous" : "next"),
       type: "button",
       text: offset < 0 ? "‹" : "›",
       "aria-label": label,
@@ -194,13 +158,82 @@ function ringCalendar(activity) {
       flowState.visibleCount = 24;
       updateFlow(
         '[data-month-arrow="' + offset + '"]',
-        "已切换到 " + flowState.month + "。",
+        "已切换到 " + monthLabel(flowState.month) + "。",
       );
     });
-    center.append(button);
+    head.append(button);
   }
-  ring.append(center);
-  return ring;
+  const title = node("div", { class: "date-title" }, [
+    node("span", { class: "date-month", text: monthLabel(flowState.month) }),
+  ]);
+  head.insertBefore(title, head.lastElementChild);
+  panel.append(head);
+  const weekdays = node("div", { class: "weekdays", "aria-hidden": "true" });
+  for (const label of ["一", "二", "三", "四", "五", "六", "日"])
+    weekdays.append(node("span", { text: label }));
+  panel.append(weekdays);
+  const grid = node("div", { class: "day-grid" });
+  const days = monthDays(flowState.month);
+  const today = currentLocalDate();
+  for (let blank = 0; blank < monthStartWeekday(flowState.month); blank++)
+    grid.append(node("span", { class: "day-cell empty", "aria-hidden": "true" }));
+  for (let day = 1; day <= days; day++) {
+    const date = flowState.month + "-" + String(day).padStart(2, "0");
+    const count = activity.get(date) ?? 0;
+    const cell = node(
+      "button",
+      {
+        class:
+          "day-cell" +
+          (count ? " has-entries" : "") +
+          (count >= 3 ? " busy" : "") +
+          (date === today ? " today" : "") +
+          (date === flowState.selectedDate ? " selected" : ""),
+        type: "button",
+        text: String(day),
+        "data-day": date,
+        "aria-label":
+          date +
+          "，" +
+          count +
+          "条 Flow" +
+          (date === today ? "，今天" : ""),
+        "aria-pressed": String(date === flowState.selectedDate),
+        style: "--order: " + (day - 1),
+      },
+      [node("span", { class: "day-dot", "aria-hidden": "true" })],
+    );
+    cell.addEventListener("click", () => {
+      flowState.selectedDate = flowState.selectedDate === date ? null : date;
+      flowState.allTime = false;
+      flowState.visibleCount = 24;
+      updateFlow(
+        '[data-day="' + date + '"]',
+        flowState.selectedDate ? "已筛选 " + date + "。" : "已显示整个月。",
+      );
+    });
+    grid.append(cell);
+  }
+  panel.append(grid);
+  const scopeButton = node("button", {
+    class: "scope-button",
+    type: "button",
+    text: flowState.allTime ? "回到本月 ↗" : "全部日期 ↗",
+    "data-scope": "true",
+    "aria-pressed": String(flowState.allTime),
+  });
+  scopeButton.addEventListener("click", () => {
+    flowState.allTime = !flowState.allTime;
+    flowState.selectedDate = null;
+    flowState.month = currentLocalDate().slice(0, 7);
+    flowState.visibleCount = 24;
+    updateFlow(
+      "[data-scope]",
+      flowState.allTime ? "已显示全部日期。" : "已回到本月。",
+    );
+  });
+  panel.append(node("div", { class: "date-footer" }, [scopeButton]));
+  return panel;
 }
 
 function thoughtCard(entry, index) {
@@ -293,7 +326,7 @@ function journal() {
       node("h1", { id: "flow-title", text: "念头流过，就留在这里。" }),
       node("p", { text: "小想法、偶然发现，还有那些突然想通的瞬间。" }),
     ]),
-    ringCalendar(selected.activity),
+    datePanel(selected.activity),
     node("p", {
       class: "canvas-scribble",
       "aria-hidden": "true",
@@ -341,33 +374,6 @@ function journal() {
     filters.append(button);
   }
   controls.append(filters);
-  const scope = node("div", { class: "date-scope" }, [
-    node("span", {
-      text: flowState.allTime
-        ? "全部日期"
-        : flowState.selectedDate
-          ? shortDate(flowState.selectedDate)
-          : flowState.month.replace("-", " 年 ") + " 月",
-    }),
-  ]);
-  const scopeButton = node("button", {
-    class: "scope-button",
-    type: "button",
-    text: flowState.allTime ? "回到本月 ↗" : "全部日期 ↗",
-    "data-scope": "true",
-  });
-  scopeButton.addEventListener("click", () => {
-    flowState.allTime = !flowState.allTime;
-    flowState.selectedDate = null;
-    flowState.month = currentLocalDate().slice(0, 7);
-    flowState.visibleCount = 24;
-    updateFlow(
-      "[data-scope]",
-      flowState.allTime ? "已显示全部日期。" : "已回到本月。",
-    );
-  });
-  scope.append(scopeButton);
-  controls.append(scope);
   const stage = node("div", { class: "thought-stage" });
   stage.append(
     node(
@@ -434,7 +440,7 @@ function journal() {
   root.append(
     node("p", {
       class: "sample-note",
-      text: "标有“示例”的内容仅用于展示。自己写的记录保存在当前浏览器中。",
+      text: "标有“示例”的内容仅用于展示。早前保存的记录仍留在当前浏览器中。",
     }),
     articleBand(entries),
   );

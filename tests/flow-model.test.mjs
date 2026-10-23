@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   categoryGroup,
   monthDays,
+  monthStartWeekday,
   readingBody,
   selectFlow,
   shiftMonth,
@@ -14,6 +15,12 @@ test("month navigation crosses years and uses the real leap-day length", () => {
   assert.equal(shiftMonth("2026-12", 1), "2027-01");
   assert.equal(monthDays("2024-02"), 29);
   assert.equal(monthDays("2026-02"), 28);
+});
+
+test("month grids offset by weekday with Monday in the first column", () => {
+  assert.equal(monthStartWeekday("2026-10"), 3);
+  assert.equal(monthStartWeekday("2026-11"), 6);
+  assert.equal(monthStartWeekday("2027-02"), 0);
 });
 
 test("legacy categories are visible under 学习", () => {

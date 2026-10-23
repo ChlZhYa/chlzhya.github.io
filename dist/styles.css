@@ -182,7 +182,7 @@ main {
   position: relative;
   display: grid;
   grid-template-columns: 27% 46% 27%;
-  grid-template-rows: 230px auto;
+  grid-template-rows: auto auto;
   padding-top: 10px;
   isolation: isolate;
 }
@@ -231,118 +231,154 @@ main {
   transform: rotate(-9deg);
   pointer-events: none;
 }
-.ring-calendar {
+.date-panel {
   grid-column: 3;
   grid-row: 1;
-  position: relative;
-  width: min(100%, 320px);
-  aspect-ratio: 1;
-  margin: -10px 0 0 auto;
+  width: min(100%, 300px);
+  margin: -4px 0 0 auto;
+  align-self: start;
+  background: #fff;
+  border: 1px solid #eaecf5;
+  border-radius: 22px 20px 25px 18px;
+  box-shadow: 0 14px 35px #4d57a412;
+  padding: 16px 18px 15px;
 }
-.ring-calendar::before {
-  content: "";
-  position: absolute;
-  inset: 6%;
-  border: 1px solid #ebe9fa;
-  border-radius: 50%;
-  opacity: 0.55;
-  pointer-events: none;
+.date-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
-.ring-day {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  transform: translate(-50%, -50%);
-  border: 1px solid transparent;
-  border-radius: 50%;
-  background: transparent;
-  color: #536080;
-  font-size: 11px;
+.date-title {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+}
+.date-month {
+  font-size: 15px;
   font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.date-arrow {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  width: 26px;
+  height: 28px;
+  font-size: 24px;
   line-height: 1;
   padding: 0;
+  border-radius: 8px;
   transition:
-    background 0.22s,
-    color 0.22s,
-    box-shadow 0.22s;
+    color 0.2s,
+    background 0.2s;
 }
-.ring-day::after {
-  content: "";
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #d9dced;
-  bottom: -2px;
-  left: calc(50% - 2px);
-  pointer-events: none;
-}
-.ring-day.active::after,
-.ring-day.today::after,
-.ring-day.selected::after {
-  display: none;
-}
-.ring-day:hover {
-  background: #c9c4ff;
-  color: var(--violet-dark);
-}
-.ring-day.active {
-  background: var(--violet);
-  color: #fff;
-}
-.ring-day.today {
-  border: 2px solid var(--violet);
-  background: #fff;
+.date-arrow:hover {
   color: var(--violet);
+  background: var(--lilac);
 }
-.ring-day.selected {
-  background: #211d51;
-  color: #fff;
-  border: 2px solid var(--violet);
-  z-index: 2;
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-top: 12px;
+  color: #a0a5ba;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
 }
-.ring-center {
-  position: absolute;
-  inset: 27%;
+.day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-top: 5px;
+}
+.day-cell {
+  aspect-ratio: 1;
+  border: 0;
+  background: transparent;
+  border-radius: 9px;
+  color: #536080;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 3px;
+  animation: dayIn 0.3s both;
+  animation-delay: calc(var(--order, 0) * 7ms);
+  transition:
+    background 0.18s,
+    color 0.18s;
 }
-.ring-month {
-  font-size: 21px;
-  font-weight: 700;
-  white-space: nowrap;
+.day-cell.empty {
+  animation: none;
+  pointer-events: none;
 }
-.ring-year {
-  font-size: 14px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-.ring-arrow {
-  position: absolute;
-  top: 48%;
-  transform: translateY(-50%);
-  width: 28px;
-  height: 35px;
-  border: 0;
+.day-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
   background: transparent;
-  font-size: 32px;
-  line-height: 1;
-  color: var(--ink);
+  transition:
+    background 0.18s,
+    transform 0.18s;
 }
-.ring-arrow:hover {
+.day-cell:hover {
+  background: var(--lilac);
+  color: var(--violet-dark);
+}
+.day-cell.has-entries {
+  color: var(--violet-dark);
+  font-weight: 700;
+}
+.day-cell.has-entries .day-dot {
+  background: var(--violet);
+}
+.day-cell.busy .day-dot {
+  width: 6px;
+  height: 6px;
+  transform: scale(1.1);
+}
+.day-cell.today {
+  box-shadow: inset 0 0 0 1.5px var(--violet);
   color: var(--violet);
 }
-.ring-arrow.previous {
-  left: -16px;
+.day-cell.selected {
+  background: #211d51;
+  color: #fff;
 }
-.ring-arrow.next {
-  right: -16px;
+.day-cell.selected .day-dot {
+  background: #fff;
+}
+.date-panel.all-time .day-cell:not(.today) {
+  opacity: 0.4;
+}
+.date-footer {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+.date-footer .scope-button {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+.date-footer .scope-button[aria-pressed="true"] {
+  background: var(--violet);
+  border-color: var(--violet);
+  color: #fff;
+}
+@keyframes dayIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .thought-stage {
   grid-column: 1/-1;
@@ -669,17 +705,6 @@ main {
 .outline-button:hover {
   border-color: var(--violet);
   color: var(--violet);
-}
-.date-scope {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-.scope-button {
-  padding: 7px 12px;
 }
 .more-thoughts {
   padding: 22px 0 8px;
@@ -1108,10 +1133,10 @@ main {
     font-size: clamp(120px, 18vw, 190px);
     margin-left: 0;
   }
-  .ring-calendar {
+  .date-panel {
     grid-column: 2;
     grid-row: 1;
-    margin: 0;
+    margin: 0 0 0 auto;
   }
   .thought-stage {
     grid-column: 1/-1;
@@ -1179,10 +1204,10 @@ main {
   .canvas-intro p {
     font-size: 14px;
   }
-  .ring-calendar {
-    width: min(100%, 320px);
+  .date-panel {
+    width: min(100%, 340px);
     flex: none;
-    margin: 6px auto 0;
+    margin: 0 auto;
   }
   .thought-stage {
     display: grid;
@@ -1239,19 +1264,8 @@ main {
     font-size: 13px;
     line-height: 1.55;
   }
-  .ring-calendar {
-    width: min(100%, 320px);
-  }
-  .ring-day {
-    width: 24px;
-    height: 24px;
-    font-size: 10px;
-  }
-  .ring-month {
-    font-size: 19px;
-  }
-  .ring-year {
-    font-size: 12px;
+  .date-panel {
+    padding: 14px 14px 13px;
   }
   .thought-stage {
     grid-template-columns: 1fr;
@@ -1308,12 +1322,8 @@ main {
   }
 }
 @media (max-width: 350px) {
-  .ring-calendar {
+  .date-panel {
     width: min(100%, 288px);
-  }
-  .ring-day {
-    width: 24px;
-    height: 24px;
   }
   .filters {
     gap: 6px;

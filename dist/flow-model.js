@@ -8,6 +8,10 @@ export function monthDays(month) {
   const [year, number] = month.split("-").map(Number);
   return new Date(year, number, 0).getDate();
 }
+export function monthStartWeekday(month) {
+  const [year, number] = month.split("-").map(Number);
+  return (new Date(year, number - 1, 1).getDay() + 6) % 7;
+}
 export function shiftMonth(month, offset) {
   const [year, number] = month.split("-").map(Number);
   const next = new Date(year, number - 1 + offset, 1);
