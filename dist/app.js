@@ -307,13 +307,25 @@ function journal() {
     "aria-label": "按分类筛选 Flow",
   });
   for (const category of flowCategories) {
-    const button = node("button", {
-      class: "filter-button",
-      type: "button",
-      text: category,
-      "aria-pressed": String(flowState.category === category),
-      "data-category": category,
-    });
+    const button = node(
+      "button",
+      {
+        class: "filter-button",
+        type: "button",
+        "aria-pressed": String(flowState.category === category),
+        "data-category": category,
+      },
+      [
+        node("span", { class: "check-slot", "aria-hidden": "true" }, [
+          node(
+            "svg",
+            { class: "filter-check", viewBox: "0 0 13 13" },
+            [node("path", { d: "M2.2 7l3 3 5.4-6.6" })],
+          ),
+        ]),
+        node("span", { class: "filter-label", text: category }),
+      ],
+    );
     button.addEventListener("click", () => {
       flowState.category = category;
       flowState.visibleCount = 24;
@@ -570,6 +582,23 @@ function route() {
   return { name: "missing" };
 }
 
+let navMarkerPlaced = false;
+function syncNavMarker(animate = true) {
+  const nav = document.querySelector(".main-nav");
+  const marker = nav?.querySelector(".nav-marker");
+  const active = nav?.querySelector('a[aria-current="page"]');
+  if (!nav || !marker || !active) return;
+  if (!animate || !navMarkerPlaced) marker.style.transition = "none";
+  marker.style.width = active.offsetWidth + "px";
+  marker.style.transform = "translateX(" + active.offsetLeft + "px)";
+  if (!animate || !navMarkerPlaced) {
+    navMarkerPlaced = true;
+    requestAnimationFrame(() => {
+      marker.style.transition = "";
+    });
+  }
+}
+
 function render() {
   const current = route();
   const nav =
@@ -582,6 +611,7 @@ function render() {
     if (link.dataset.nav === nav) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
   }
+  syncNavMarker();
   app.replaceChildren();
   if (current.name === "journal") app.append(journal());
   else if (current.name === "essays") app.append(essays());
@@ -717,6 +747,8 @@ document
   .addEventListener("click", exportEntries);
 searchInput.addEventListener("input", search);
 window.addEventListener("hashchange", navigate);
+window.addEventListener("resize", () => syncNavMarker(false));
+document.fonts?.ready?.then(() => syncNavMarker(false));
 window.addEventListener("storage", (event) => {
   if (event.key !== storageKey && event.key !== null) return;
   userEntries = loadEntries();
