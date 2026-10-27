@@ -10,6 +10,7 @@ import {
   shiftMonth,
 } from "./flow-model.js";
 import { parseSnapshot } from "./entry-model.js";
+import { plainText, renderMarkdown } from "./markdown.js";
 
 const storageKey = "flow-journal-v1";
 const app = document.querySelector("#app");
@@ -77,7 +78,7 @@ function currentLocalDate() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 function excerpt(entry) {
-  return readingBody(entry).replace(/\s+/g, " ").slice(0, 138);
+  return plainText(readingBody(entry)).slice(0, 138);
 }
 function announce(message) {
   status.textContent = message;
@@ -527,11 +528,9 @@ function reader(entry) {
       tagsFor(entry),
     ]),
   );
-  const body = node("div", { class: "prose" });
-  const text = readingBody(entry);
-  if (text)
-    for (const paragraph of text.split(/\n\s*\n/))
-      body.append(node("p", { text: paragraph }));
+  const body = node("div", { class: "prose" }, [
+    renderMarkdown(readingBody(entry)),
+  ]);
   article.append(body);
   article.append(
     node("div", { class: "reader-footer" }, [

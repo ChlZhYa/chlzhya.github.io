@@ -1,3 +1,5 @@
+import { plainText } from "./markdown.js";
+
 export const flowCategories = Object.freeze(["全部", "灵感", "学习", "生活"]);
 const legacyStudy = new Set(["AI / Agent", "开发", "阅读"]);
 export function categoryGroup(category) {
@@ -23,7 +25,7 @@ export function titleFromBody(body) {
       .split(/\r?\n/)
       .map((part) => part.trim())
       .find(Boolean) ?? "";
-  return Array.from(line).slice(0, 48).join("");
+  return Array.from(plainText(line)).slice(0, 48).join("");
 }
 export function readingBody(entry) {
   const text = entry.body.trim();
