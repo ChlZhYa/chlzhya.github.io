@@ -962,9 +962,118 @@ main {
   color: #41455e;
 }
 .prose p {
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
   margin: 0 0 1.45em;
+}
+.prose h2,
+.prose h3,
+.prose h4 {
+  color: var(--ink);
+  line-height: 1.4;
+  margin: 1.9em 0 0.7em;
+}
+.prose h2 {
+  font-size: 23px;
+}
+.prose h3 {
+  font-size: 19px;
+}
+.prose h4 {
+  font-size: 17px;
+}
+.prose ul,
+.prose ol {
+  padding-left: 1.6em;
+  margin: 0 0 1.45em;
+}
+.prose li {
+  margin: 0.25em 0;
+}
+.prose li > p {
+  margin: 0 0 0.6em;
+}
+.prose li::marker {
+  color: var(--violet);
+  font-weight: 600;
+}
+.prose li:has(> input[type="checkbox"]) {
+  list-style: none;
+  margin-left: -1.6em;
+}
+.prose input[type="checkbox"] {
+  accent-color: var(--violet);
+  margin: 0 6px 0 0;
+  vertical-align: middle;
+}
+.prose blockquote {
+  margin: 0 0 1.45em;
+  padding: 2px 0 2px 18px;
+  border-left: 3px solid #cfc8ff;
+  color: var(--muted);
+}
+.prose blockquote p:last-child {
+  margin-bottom: 0;
+}
+.prose a {
+  color: var(--violet);
+  text-decoration: underline;
+  text-decoration-color: #cfc8ff;
+  text-underline-offset: 3px;
+}
+.prose a:hover {
+  text-decoration-color: currentColor;
+}
+.prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86em;
+  background: var(--lilac);
+  color: var(--violet-dark);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.prose pre {
+  margin: 0 0 1.45em;
+  padding: 16px 18px;
+  background: #211d51;
+  color: #e8e6f7;
+  border-radius: 14px;
+  line-height: 1.65;
+  overflow-x: auto;
+}
+.prose pre code {
+  font-size: 13.5px;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+}
+.prose img {
+  display: block;
+  max-width: 100%;
+  border-radius: 14px;
+  margin: 0 auto 1.45em;
+}
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 2.2em 0;
+}
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1.45em;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.prose th,
+.prose td {
+  border: 1px solid var(--line);
+  padding: 8px 12px;
+  text-align: left;
+}
+.prose th {
+  background: var(--page);
+  font-weight: 600;
 }
 .reader-footer {
   border-top: 1px solid var(--line);
