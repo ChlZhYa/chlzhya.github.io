@@ -8,6 +8,9 @@ const resources = new Map([
   ["/data.js", "text/javascript"],
   ["/flow-model.js", "text/javascript"],
   ["/entry-model.js", "text/javascript"],
+  ["/published.js", "text/javascript"],
+  ["/markdown.js", "text/javascript"],
+  ["/vendor/marked.esm.js", "text/javascript"],
 ]);
 
 for (const [path, mime] of resources) {
