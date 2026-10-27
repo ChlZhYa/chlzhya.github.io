@@ -10,7 +10,7 @@
 npm start
 ```
 
-打开 <http://127.0.0.1:4173>。运行 `npm run check` 检查语法，`npm test` 验证日期、筛选与记录快照规则。服务器运行时，`npm run smoke` 检查静态资源、文件类型和只读边界。
+`npm start` 会先执行 `npm run build`（把 `content/` 下的 Markdown 编成 `dist/published.js`），再启动服务器。打开 <http://127.0.0.1:4173>。运行 `npm run check` 检查语法并构建内容，`npm test` 验证日期、筛选、记录快照与 frontmatter 解析。服务器运行时，`npm run smoke` 检查静态资源、文件类型和只读边界。
 
 ## 浏览
 
@@ -20,7 +20,17 @@ npm start
 
 页面不再提供在线写入。早前在浏览器里保存过的记录仍会显示，记录使用 `localStorage`，键为 `flow-journal-v1`，快照结构为 `{ "version": 1, "entries": [...] }`。旧分类“AI / Agent”“开发”“阅读”仍可读取，并归入“学习”筛选。旧的 `#/journal` 链接仍可访问 Flow，新的首页地址是 `#/flow`。
 
-页脚和“关于”页可导出 JSON 备份，导出时重新读取最新记录，只包含用户自己的内容，不包含示例。当前版本没有导入、删除、账户、同步或公开发布。若本地数据无法读取，页面会提示并暂停导出，以免生成不完整的备份。
+页脚和“关于”页可导出 JSON 备份，导出时重新读取最新记录，只包含用户自己的内容，不包含示例。站点内容可通过仓库内 Markdown 公开发布（见下方「内容发布」）。若本地数据无法读取，页面会提示并暂停导出，以免生成不完整的备份。
+
+## 内容发布
+
+把短笔记放进 `content/flow/`，长文放进 `content/essays/`，使用 YAML frontmatter（`title` / `date` / `category` 必填）。详见 `content/README.md`。
+
+```sh
+npm run build   # 生成 dist/published.js
+```
+
+GitHub Pages 工作流在上传 `dist` 前会自动运行同一构建。`dist/data.js` 中的 `demo-*` 示例仍保留作演示。
 
 ## 文件
 
@@ -30,4 +40,7 @@ npm start
 - `dist/flow-model.js` 负责纯日期、分类和筛选逻辑。
 - `dist/entry-model.js` 负责本地记录快照的读取校验。
 - `dist/data.js` 保存只读示例。
+- `dist/published.js` 由 `content/` 构建生成的已发布条目。
+- `content/flow/`、`content/essays/` Markdown 源文件。
+- `scripts/build-content.mjs` 内容构建脚本。
 - `server.mjs` 提供本机静态服务器。
