@@ -250,7 +250,10 @@ main {
 }
 .date-title {
   flex: 1;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   min-width: 0;
 }
 .date-month {
@@ -276,6 +279,32 @@ main {
 .date-arrow:hover {
   color: var(--violet);
   background: var(--lilac);
+}
+.scope-toggle {
+  border: 0;
+  background: transparent;
+  color: #a0a5ba;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.scope-toggle:hover {
+  color: var(--violet);
+  background: var(--lilac);
+}
+.scope-toggle[aria-pressed="true"] {
+  background: var(--violet);
+  color: #fff;
 }
 .weekdays {
   display: grid;
@@ -355,20 +384,10 @@ main {
 }
 .date-panel.all-time .day-cell:not(.today) {
   opacity: 0.4;
+  animation: none;
 }
-.date-footer {
-  margin-top: 12px;
-  display: flex;
-  justify-content: center;
-}
-.date-footer .scope-button {
-  padding: 6px 14px;
-  font-size: 12px;
-}
-.date-footer .scope-button[aria-pressed="true"] {
-  background: var(--violet);
-  border-color: var(--violet);
-  color: #fff;
+.date-panel.all-time .date-month {
+  color: var(--violet);
 }
 @keyframes dayIn {
   from {
@@ -688,7 +707,6 @@ main {
     transform: scale(1);
   }
 }
-.scope-button,
 .outline-button {
   background: transparent;
   border: 1px solid var(--line);
@@ -701,7 +719,6 @@ main {
     color 0.2s,
     border-color 0.2s;
 }
-.scope-button:hover,
 .outline-button:hover {
   border-color: var(--violet);
   color: var(--violet);

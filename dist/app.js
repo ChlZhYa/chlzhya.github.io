@@ -164,8 +164,31 @@ function datePanel(activity) {
     });
     head.append(button);
   }
+  const scopeButton = node("button", {
+    class: "scope-toggle",
+    type: "button",
+    text: "∞",
+    "data-scope": "true",
+    "aria-pressed": String(flowState.allTime),
+    "aria-label": flowState.allTime ? "回到本月" : "显示全部日期",
+    title: flowState.allTime ? "回到本月" : "显示全部日期",
+  });
+  scopeButton.addEventListener("click", () => {
+    flowState.allTime = !flowState.allTime;
+    flowState.selectedDate = null;
+    flowState.month = currentLocalDate().slice(0, 7);
+    flowState.visibleCount = 24;
+    updateFlow(
+      "[data-scope]",
+      flowState.allTime ? "已显示全部日期。" : "已回到本月。",
+    );
+  });
   const title = node("div", { class: "date-title" }, [
-    node("span", { class: "date-month", text: monthLabel(flowState.month) }),
+    node("span", {
+      class: "date-month",
+      text: flowState.allTime ? "全部日期" : monthLabel(flowState.month),
+    }),
+    scopeButton,
   ]);
   head.insertBefore(title, head.lastElementChild);
   panel.append(head);
@@ -216,24 +239,6 @@ function datePanel(activity) {
     grid.append(cell);
   }
   panel.append(grid);
-  const scopeButton = node("button", {
-    class: "scope-button",
-    type: "button",
-    text: flowState.allTime ? "回到本月 ↗" : "全部日期 ↗",
-    "data-scope": "true",
-    "aria-pressed": String(flowState.allTime),
-  });
-  scopeButton.addEventListener("click", () => {
-    flowState.allTime = !flowState.allTime;
-    flowState.selectedDate = null;
-    flowState.month = currentLocalDate().slice(0, 7);
-    flowState.visibleCount = 24;
-    updateFlow(
-      "[data-scope]",
-      flowState.allTime ? "已显示全部日期。" : "已回到本月。",
-    );
-  });
-  panel.append(node("div", { class: "date-footer" }, [scopeButton]));
   return panel;
 }
 
