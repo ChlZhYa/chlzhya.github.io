@@ -29,7 +29,7 @@ Keep key flow-journal-v1, snapshot version1, Entry {id,kind:'log'|'essay',title,
 
 UI-only state is {month:'YYYY-MM', selectedDate:null|string, category:'全部'|'灵感'|'学习'|'生活', visibleCount:24}. Default scope is selected month. Month arrows clear day and reset pagination. Day click filters; clicking selected day clears it. 全部日期 explicitly enables all-time browse; 回到本月 resets month. Derive actual activity counts before paging. Categories/date intersection must have reversible zero-result feedback. Keep activated date/filter focus and announce changes.
 
-Flow writing is body-first with optional title. Derive a bounded plain-text title from the first nonempty line if omitted. Essays still require title. Date/category/tag controls are secondary. Safe DOM text rendering, search across both kinds, native dialogs, saved data, cross-tab handling, explicit persistence failure and user-only export must survive. No cloud claims, backend, deletion or import scope.
+Flow writing is body-first with optional title. Derive a bounded plain-text title from the first nonempty line if omitted, with Markdown markers stripped. Essays still require title. Date/category/tag controls are secondary. Bodies are GitHub-flavored Markdown. The reader parses them with the vendored marked lexer and builds DOM nodes from the tokens. No `innerHTML` anywhere. Raw HTML in a body stays text. Link and image URLs accept only `http:`, `https:`, `mailto:` and relative targets. Search across both kinds, native dialogs, saved data, cross-tab handling, explicit persistence failure and user-only export must survive. No cloud claims, backend, deletion or import scope.
 
 ## Architecture and implementation handoff
 

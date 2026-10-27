@@ -18,6 +18,8 @@ npm start
 
 卡片直接显示至多三行正文摘要，点击卡片任意位置可打开阅读页。自动标题与正文首行完全相同时只展示一次，完整内容仍按原文保存。
 
+阅读页用 `dist/vendor/marked.esm.js`（marked v18.1.2，MIT）解析正文 Markdown，`dist/markdown.js` 把解析得到的 token 直接构建为 DOM 节点，不经过 `innerHTML`。正文里的原始 HTML 按文字显示，链接只接受 `http:`、`https:`、`mailto:` 和站内相对地址。支持的语法见 `content/README.md`。卡片摘要和自动标题使用去掉标记后的纯文本。
+
 页面不再提供在线写入。早前在浏览器里保存过的记录仍会显示，记录使用 `localStorage`，键为 `flow-journal-v1`，快照结构为 `{ "version": 1, "entries": [...] }`。旧分类“AI / Agent”“开发”“阅读”仍可读取，并归入“学习”筛选。旧的 `#/journal` 链接仍可访问 Flow，新的首页地址是 `#/flow`。
 
 页脚和“关于”页可导出 JSON 备份，导出时重新读取最新记录，只包含用户自己的内容，不包含示例。站点内容可通过仓库内 Markdown 公开发布（见下方「内容发布」）。若本地数据无法读取，页面会提示并暂停导出，以免生成不完整的备份。
@@ -37,6 +39,8 @@ GitHub Pages 工作流在上传 `dist` 前会自动运行同一构建。`dist/da
 - `dist/index.html` 提供页面外壳与原生对话框。
 - `dist/styles.css` 实现响应式画布、月历和动效。
 - `dist/app.js` 负责路由、渲染和检索。
+- `dist/markdown.js` 把正文 Markdown 解析为 DOM 节点，并提供去标记的纯文本。
+- `dist/vendor/marked.esm.js` 是 marked 的 ESM 构建，按原样 vendor，升级时整文件替换。
 - `dist/flow-model.js` 负责纯日期、分类和筛选逻辑。
 - `dist/entry-model.js` 负责本地记录快照的读取校验。
 - `dist/data.js` 保存只读示例。
