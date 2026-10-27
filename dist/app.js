@@ -1,4 +1,5 @@
 import { seedEntries } from "./data.js";
+import { publishedEntries } from "./published.js";
 import {
   categoryGroup,
   flowCategories,
@@ -56,7 +57,7 @@ function loadEntries() {
 userEntries = loadEntries();
 
 function allEntries() {
-  return [...userEntries, ...seedEntries].sort(
+  return [...userEntries, ...publishedEntries, ...seedEntries].sort(
     (a, b) =>
       b.date.localeCompare(a.date) || b.updatedAt.localeCompare(a.updatedAt),
   );
