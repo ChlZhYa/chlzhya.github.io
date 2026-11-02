@@ -1,5 +1,15 @@
 export const publishedEntries = Object.freeze([
   {
+    id: "2026-11-03-早起读-agent-文章",
+    kind: "log",
+    title: "早起读 Agent 文章",
+    date: "2026-11-03",
+    category: "学习",
+    tags: ["AI", "Agent", "阅读"],
+    updatedAt: "2026-11-03T09:00:00.000Z",
+    body: "\n早起读完了两篇关于 Agent 的文章：\n\n- [The Anatomy of an Agent Harness](https://www.langchain.com/blog/the-anatomy-of-an-agent-harness)\n- [Building effective agents](https://www.anthropic.com/research/building-effective-agents)\n\n为了保证学习进度，我直接用中文来快速学习。在理解概念的同时还要学习不认识的英文单词，对脑力是不小的负担。",
+  },
+  {
     id: "2026-10-27-跑步与学习",
     kind: "log",
     title: "跑步与学习",
